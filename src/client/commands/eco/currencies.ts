@@ -97,9 +97,11 @@ export default new Command({
         ]
     },
     async onInteraction(interaction) {
+        await interaction.deferReply();
+
         const member = interaction.options.getMember('member') ?? interaction.member;
 
-        return await interaction.reply({
+        return await interaction.editReply({
             allowedMentions: {},
             embeds: [await buildEmbed(member)],
         });
