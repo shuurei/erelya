@@ -1,6 +1,10 @@
 {
 	"name": "erelya",
 	"version": "1.9.6",
+	"author": {
+		"name": "Shurei",
+		"url": "https://shuurei.github.io/portfolio/"
+	},
 	"description": "A discord bot project",
 	"license": "GPL-3.0-only",
 	"type": "module",

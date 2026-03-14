@@ -116,10 +116,7 @@ export class Command {
 
     onInteraction?: (interaction: ChatInputCommandInteraction) => any;
 
-    onMessage?: (
-        message: Message,
-        ctx?: CommandOnMessageContext
-    ) => any;
+    onMessage?: (message: Message, ctx?: CommandOnMessageContext) => any;
 
     constructor(options: CommandOptions) {
         if (!(options.onInteraction || options.onMessage)) {
@@ -142,7 +139,7 @@ export class Command {
         const { message, interaction } = this.structure;
         return interaction?.subcommandName ?? interaction?.commandName ?? this.messageCommand?.name ?? message?.commandName ?? 'unknown';
     }
-
+    
     toAPI() {
         const data: RESTPostAPIApplicationCommandsJSONBody = {
             name: this.name,
