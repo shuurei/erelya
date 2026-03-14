@@ -1,113 +1,195 @@
-import { SymbolsUI } from '@/ui/SymbolsUI'
 import pc from 'picocolors'
 
-export type ColorAPI = typeof pc
+import { SymbolsUI } from '@/ui/SymbolsUI'
+import { hexToRgb } from '@/utils/color'
+import { Formatter } from 'picocolors/types'
 
-export type LoggerTextInput = string | ((color: ColorAPI) => string | undefined)
+type RGB = [number, number, number];
+type ColorInputArgs = string | RGB;
 
-export type LoggerOptions = {
-    prefix?: LoggerTextInput
+type DefaultColors = Omit<typeof pc, 'createColors' | 'isColorSupported'>
+
+type LoggerColors = DefaultColors & {
+    orange: Formatter;
+    orangeBright: Formatter;
+    purple: Formatter;
+    purpleBright: Formatter;
+    custom: (color: ColorInputArgs, text: string) => string;
+    gradient: (startColor: ColorInputArgs, endColor: ColorInputArgs, text: string) => string;
 }
 
-export type LoggerBoxOptions = {
-    title?: LoggerTextInput
-    message: LoggerTextInput
-    bottomTitle?: LoggerTextInput
+type TextFormatter = string | ((color: LoggerColors) => string);
+
+type LoggerOptions = {
+    prefix?: TextFormatter
+}
+
+interface LoggerSeparatorOptions {
+    lineColor?: (string & {}) | RGB | Exclude<keyof LoggerColors, 'custom' | 'gradient'>;
+    lineWeight?: number;
+}
+
+interface LoggerInfoOptions {
+    arrowColor?: (string & {}) | RGB | Exclude<keyof LoggerColors, 'custom' | 'gradient'>;
+}
+
+interface LoggerItem {
+    label?: string;
+    value?: string;
 }
 
 export class Logger {
+    public formatters: LoggerColors;
+    public defaultMaxLineLength: number;
+
     private prefix?: string
 
+    private getFormatter(formatter: Exclude<keyof LoggerColors, 'custom' | 'gradient'>): Formatter;
+    private getFormatter(formatter: string | RGB): Formatter;
+    private getFormatter(formatter: string): Formatter {
+        if (
+            formatter in this.formatters
+            && !(formatter === 'custom' || formatter === 'gradient')
+        ) {
+            return this.formatters[formatter as Exclude<keyof LoggerColors, 'custom' | 'gradient'>];
+        } else {
+            return (text: string) => this.formatters.custom(formatter, text);
+        }
+    }
+
+    private applyCustomColor(color: ColorInputArgs, text: string): string {
+        const [r, g, b] = typeof color === 'string'
+            ? hexToRgb(color)
+            : color;
+
+        return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
+    }
+
+    private applyGradientColor(startColor: ColorInputArgs, endColor: ColorInputArgs, text: string) {
+        const startColorRGB = typeof startColor === 'string' ? hexToRgb(startColor) : startColor;
+        const endColorRGB = typeof endColor === 'string' ? hexToRgb(endColor) : endColor;
+
+        let out = '';
+        const length = text.length;
+
+        for (let i = 0; i < length; i++) {
+            const t = i / (length - 1);
+
+            const r = Math.round(startColorRGB[0] + (endColorRGB[0] - startColorRGB[0]) * t);
+            const g = Math.round(startColorRGB[1] + (endColorRGB[1] - startColorRGB[1]) * t);
+            const b = Math.round(startColorRGB[2] + (endColorRGB[2] - startColorRGB[2]) * t);
+
+            out += `\x1b[38;2;${r};${g};${b}m${text[i]}`;
+        }
+
+        return out + '\x1b[0m';
+    }
+
     constructor(options?: LoggerOptions) {
-        this.prefix = this.resolveText(options?.prefix)
+        this.defaultMaxLineLength = 50;
+
+        this.formatters = {
+            ...pc,
+            orange: (text: string) => this.applyCustomColor('#ffbb62', text),
+            orangeBright: (text: string) => this.applyCustomColor('#ffc983', text),
+            purple: (text: string) => this.applyCustomColor('#5053ff', text),
+            purpleBright: (text: string) => this.applyCustomColor('#bc8fff', text),
+            custom: (color: ColorInputArgs, text: string) => this.applyCustomColor(color, text),
+            gradient: (startColor: ColorInputArgs, endColor: ColorInputArgs, text: string) => this.applyGradientColor(startColor, endColor, text)
+        };
+        
+        this.prefix = this.resolveText(options?.prefix);
+    }
+
+    private display(messages: TextFormatter[], type?: string) {
+        const parts = [
+            this.prefix,
+            type,
+            ...messages.map((message) => this.resolveText(message))
+        ].filter(Boolean);
+        console.log(...parts);
+    }
+
+    private resolveText(text?: TextFormatter): string | undefined {
+        if (!text) return undefined
+
+        if (typeof text === 'function') {
+            return text(this.formatters);
+        }
+
+        return text
     }
 
     use(options?: LoggerOptions): Logger {
         return new Logger({
             prefix: options?.prefix ?? this.prefix
-        })
+        });
     }
 
-    private format(type: string, ...message: unknown[]) {
-        const parts = [this.prefix, type, ...message].filter(Boolean)
-        console.log(...parts)
+    info(message: TextFormatter, options?: LoggerInfoOptions) {
+        const resolvedMessage = this.resolveText(message);
+        const arrowColor = this.getFormatter(options?.arrowColor ?? 'purpleBright');
+        console.log(`${arrowColor(`➤ `)} ${resolvedMessage}`);
     }
 
-    private resolveText(text?: LoggerTextInput): string | undefined {
-        if (!text) return undefined
-        return typeof text === 'function' ? text(pc) : text
+    log(...message: TextFormatter[]) {
+        this.display(message);
     }
 
-    log(...message: unknown[]) {
-        this.format('', ...message)
+    warn(...message: TextFormatter[]) {
+        this.display(message, this.formatters.bold(this.formatters.yellow('[WARN]')));
     }
 
-    info(...message: unknown[]) {
-        this.format(pc.bold(pc.cyan('[INFO]')), ...message)
+    error(...message: TextFormatter[]) {
+        this.display(message, this.formatters.bold(this.formatters.red('[ERROR]')));
     }
 
-    warn(...message: unknown[]) {
-        this.format(pc.bold(pc.yellow('[WARN]')), ...message)
+    success(...message: TextFormatter[]) {
+        this.display(message, this.formatters.bold(this.formatters.green('[SUCCESS]')));
     }
 
-    error(...message: unknown[]) {
-        this.format(pc.bold(pc.red('[ERROR]')), ...message)
-    }
+    list(items: LoggerItem[]) {
+        const labels = items
+            .map((i) => i.label)
+            .filter((l): l is string => !!l);
 
-    success(...message: unknown[]) {
-        this.format(pc.bold(pc.green('[SUCCESS]')), ...message)
-    }
+        const maxLabelLength = Math.max(
+            0,
+            ...labels.map(l => l.length)
+        );
 
-    topBorderBox(title?: LoggerTextInput) {
-        const cornerTopLeft = pc.yellow(SymbolsUI.box.cornerTopLeft)
-        const star = pc.yellow(SymbolsUI.pointedStar)
+        for (const item of items) {
+            if (!item.label) {
+                console.log();
+                continue
+            }
 
-        const resolvedText = this.resolveText(title)
-
-        const parts = [`${cornerTopLeft} ${star}`]
-        if (resolvedText) {
-            parts.push(`${resolvedText} ${star}`)
+            this.log(({ purpleBright, orangeBright }) =>
+                `${purpleBright('➤ ')} ${item.label!.padEnd(maxLabelLength + 4)} ${orangeBright(item.value ?? '')}`
+            );
         }
-
-        console.log(parts.join(' '))
     }
 
-    borderBox(text: LoggerTextInput) {
-        const vertical = pc.yellow(SymbolsUI.box.vertical)
-        const resolvedText = this.resolveText(text)
-
-        console.log(`${vertical} ${resolvedText}`)
+    separator(options?: LoggerSeparatorOptions) {
+        const lineColor = this.getFormatter(options?.lineColor ?? 'purple');
+        console.log(`${lineColor(`━`.repeat(options?.lineWeight ?? this.defaultMaxLineLength))}`);
     }
 
-    bottomBorderBox(title?: LoggerTextInput) {
-        const cornerBottomLeft = pc.yellow(SymbolsUI.box.cornerBottomLeft)
-        const star = pc.yellow(SymbolsUI.pointedStar)
+    header(title: TextFormatter, options?: LoggerSeparatorOptions) {
+        const resolvedTitle = this.resolveText(title) ?? '';
+        const lineColor = this.getFormatter(options?.lineColor ?? 'purple');
 
-        const resolvedText = this.resolveText(title)
+        const totalWidth = options?.lineWeight ?? this.defaultMaxLineLength;
 
-        const parts = [`${cornerBottomLeft} ${star}`]
-        if (resolvedText) {
-            parts.push(`${resolvedText} ${star}`)
-        }
+        const textLength = resolvedTitle.replace(/\x1b\[[0-9;]*m/g, '').length;
 
-        console.log(parts.join(' '))
-    }
+        const remaining = totalWidth - textLength - 2;
+        const left = Math.ceil(remaining / 2);
+        const right = Math.floor(remaining / 2);
 
-    box(options: LoggerTextInput | LoggerBoxOptions) {
-        let title: LoggerTextInput | undefined
-        let message: LoggerTextInput
-        let bottomTitle: LoggerTextInput | undefined
+        const leftSep = lineColor('━'.repeat(Math.max(0, left)));
+        const rightSep = lineColor('━'.repeat(Math.max(0, right)));
 
-        if (typeof options === 'string' || typeof options === 'function') {
-            message = options
-        } else {
-            title = options.title
-            message = options.message
-            bottomTitle = options.bottomTitle
-        }
-
-        this.topBorderBox(title)
-        this.borderBox(message)
-        this.bottomBorderBox(bottomTitle)
+        console.log(`${leftSep} ${resolvedTitle} ${rightSep}`);
     }
 }

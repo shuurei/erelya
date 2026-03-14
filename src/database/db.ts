@@ -3,18 +3,14 @@ import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 
 import logger from '@/utils/logger'
 
-import {
-    userExtension,
-    shopExtension,
-    memberExtension,
-} from './extensions'
+import { userExtension, shopExtension, memberExtension } from './extensions'
 
 const adapter = new PrismaMariaDb({
     host: process.env.DATABASE_HOST,
     user: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
-    connectTimeout: 5000
+    acquireTimeout: process.env.ENV === 'PROD' ? 10_000 : 750
 });
 
 const prisma = new PrismaClient({ adapter })
@@ -25,6 +21,6 @@ const prisma = new PrismaClient({ adapter })
 export default Object.assign(prisma, {
     adapter,
     logger: logger.use({
-        prefix: (c) => c.white(`[${c.cyanBright(`PRISMA`)}] <🗄️>`)
+        prefix: ({ white, cyanBright }) => white(`[${cyanBright(`PRISMA`)}] <🗄️>`)
     })
 });

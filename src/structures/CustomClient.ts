@@ -149,6 +149,8 @@ export class CustomClient extends Client {
     }
 
     async login(token?: string) {
+        logger.info(`The client is trying to connect to Discord..`, { arrowColor: 'orangeBright' });
+
         token ??= process.env.CLIENT_TOKEN;
 
         if (!token) {
@@ -163,13 +165,18 @@ export class CustomClient extends Client {
         this.rest.setToken(token);
 
         return await super.login(this.token).then(async (token) => {
-            if (this.user) {
+            const user = this.user;
+            if (user) {
                 this.logger = logger.use({
-                    prefix: (c) => c.white(`[${c.cyanBright(this.user!.username)}] <🤖>`)
+                    prefix: ({ purple, purpleBright }) => {
+                        return purple('[').concat(purpleBright(user.username)).concat(purple(']'));
+                    }
                 });
 
+                await this.commands.syncSlashCommands();
+
                 if (process.env.HUB_GUILD_ID) {
-                    this.logger.log('🔄 » Initializing hub..');
+                    this.logger.info('Initializing client hub', { arrowColor: 'orangeBright' });
 
                     const hub = await this.guilds.fetch(process.env.HUB_GUILD_ID);
                     if (!hub) {
@@ -183,33 +190,31 @@ export class CustomClient extends Client {
                                 ticketChannel
                             });
                         
-                            this.logger.log('✅ » Hub ticket channel initialized');
+                            this.logger.info('Hub ticket channel initialized', { arrowColor: 'greenBright' });
                         } else {
                             throw new Error(`❌ » Hub ticket channel invalid (${process.env.HUB_TICKET_CHANNEL_ID})`);
                         }
                     } else {
-                        this.logger.log(`⚠️ » Hub Ticket Channel skipped`)
+                        this.logger.info(`Hub Ticket Channel skipped`, { arrowColor: 'orangeBright' });
                     }
 
                     if (process.env.HUB_HEART_LOGS_CHANNEL_ID) {
                         const heartLogsChannel = await hub.channels.fetch(process.env.HUB_HEART_LOGS_CHANNEL_ID);
                         if (heartLogsChannel?.type === ChannelType.GuildText) {
-                            this.hub = Object.assign(hub, {
-                                heartLogsChannel
-                            });
+                            this.hub = Object.assign(hub, { heartLogsChannel });
 
-                            this.logger.log('✅ » Hub heart logs initialized');
+                            this.logger.info('Hub heart logs initialized', { arrowColor: 'greenBright' });
                         } else {
                             throw new Error(`❌ » Hub heart logs channel invalid (${process.env.HUB_HEART_LOGS_CHANNEL_ID})`);
                         }
                     } else {
-                        this.logger.log(`⚠️ » Hub Heart Logs skipped`)
+                        this.logger.info(`Hub Heart Logs skipped`, { arrowColor: 'orangeBright' });
                     }
 
                     this.emit('hubReady', hub);
-                    this.logger.log('✅ » Hub initialized\n');
+                    this.logger.info('Hub initialized', { arrowColor: 'greenBright' });
                 } else {
-                    this.logger.log('⚠️ » Hub disabled\n');
+                    this.logger.info('Skipped hub initialization', { arrowColor: 'orangeBright' });
                 }
 
                 const mainGuild = await this.guilds.fetch(mainGuildConfig.id);
@@ -231,23 +236,18 @@ export class CustomClient extends Client {
                 setInterval(() => this.randomReflexion(), randomNumber(1, 10) * 60 * 1000);
             }
 
+            this.emit('clientSetup', this);
+
             return token;
         });
     }
 
     async start(token?: string) {
-        await this.events.listen({
-            directory: 'events'
-        });
+        logger.header(({ purpleBright }) => purpleBright('✦ CLIENT ✦'));
 
-        await this.commands.load({
-            directory: 'commands'
-        });
-
-        return await this.login(token).then(async (token) => {
-            await this.commands.syncSlashCommands();
-
-            return token;
-        });
+        await this.events.listen({ directory: 'events' });
+        await this.commands.load({ directory: 'commands' });
+        
+        return await this.login(token);
     }
 }

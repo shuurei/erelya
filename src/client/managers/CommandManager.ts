@@ -50,6 +50,19 @@ export class CommandManager {
         return this._commands.filter((cmd) => cmd.access?.guild?.authorizedIds?.length);
     }
 
+    get onlyBothCommands() {
+        return this._commands.filter((cmd) => {
+            return cmd.onInteraction
+                && cmd.onMessage
+                && cmd.structure.interaction
+                && cmd?.messageCommand?.style === 'slashCommand'
+        });
+    }
+
+    get onlySlashCommands() {
+        return this._commands.filter((cmd) => cmd.onInteraction && !cmd.onMessage && cmd.structure.interaction);
+    }
+
     get slashCommands() {
         return this._commands.filter((cmd) => cmd.onInteraction && cmd.structure.interaction);
     }
@@ -60,6 +73,10 @@ export class CommandManager {
 
     get restrictedSlashCommands() {
         return this.restrictedCommands.filter((cmd) => cmd.onInteraction && cmd.structure.interaction);
+    }
+
+    get onlyMessageCommands() {
+        return this._commands.filter((cmd) => cmd.onMessage && !cmd.onInteraction);
     }
 
     get messageCommands() {
@@ -75,90 +92,186 @@ export class CommandManager {
     }
 
     async load(options: LoadCommandManagerOptions) {
+        logger.info('Starting client commands loading..', { arrowColor: 'orangeBright' });
+
         const cwd = './src/client/';
         const path = options.directory.concat('/**/*.{ts,js}');
 
-        logger.topBorderBox('Commands Loading ⏳');
+        let stats = {
+            loaded: 0,
+            invalid: 0,
+        }
 
         const files = await fg(path, { cwd });
-        for (const filePath of files) {
-            const mod = (await import(pathToFileURL(`${cwd}/${filePath}`).href))?.default;
-            if (!(mod instanceof Command)) continue;
-
-            const groupRegex = /^\(.+\)$/;
-            const parts = filePath
-                .replace(/\.(ts|js)$/, '')
-                .split('/')
-                .slice(1)
-                .filter((p) => !groupRegex.test(p));
-
-            if (parts.length < 1) continue;
-
-            let interactionStructure: Partial<CommandStructure['interaction']> = {};
-            let messageStructure: Partial<CommandStructure['message']> = {};
-
-            let fileName = parts.pop() as string;
-
-            const isIndexCommand = fileName.toLowerCase() === 'index';
-
-            if (isIndexCommand && parts.length > 1) {
-                fileName = parts.pop() as string;
-            }
-
-            if (mod.onInteraction) {
-                const lastParts = parts.slice(-2);
-
-                if (lastParts.length === 2) {
-                    interactionStructure = {
-                        subcommandGroupName: lastParts[1],
-                        subcommandName: fileName,
-                        commandName: lastParts[0],
-                    };
-                } else if (lastParts.length === 1) {
-                    interactionStructure = {
-                        commandName: parts[0],
-                        subcommandName: fileName,
-                    }
-                } else {
-                    interactionStructure.commandName = fileName
-                }
-
-                mod.structure.interaction = interactionStructure as CommandStructure['interaction'];
-            }
-
-            if (mod.onMessage) {
-                messageStructure = {
-                    commandName: fileName,
-                    parts,
+        if (files.length > 0) {
+            for (const filePath of files) {
+                const mod = (await import(pathToFileURL(`${cwd}/${filePath}`).href))?.default;
+                if (!(mod instanceof Command)) {
+                    stats.invalid++
+    
+                    logger.info(({ redBright, yellowBright }) => {
+                        return redBright(`${yellowBright(`"${filePath}"`)} is not a ${yellowBright('Command')} instance`);
+                    }, { arrowColor: 'redBright' });
+    
+                    continue;
                 };
-
-                mod.structure.message = messageStructure as CommandStructure['message'];
+    
+                const groupRegex = /^\(.+\)$/;
+                const parts = filePath
+                    .replace(/\.(ts|js)$/, '')
+                    .split('/')
+                    .slice(1)
+                    .filter((p) => !groupRegex.test(p));
+    
+                if (parts.length < 1) {
+                    stats.invalid++
+                    continue;
+                }
+    
+                let interactionStructure: Partial<CommandStructure['interaction']> = {};
+                let messageStructure: Partial<CommandStructure['message']> = {};
+    
+                let fileName = parts.pop() as string;
+    
+                const isIndexCommand = fileName.toLowerCase() === 'index';
+    
+                if (isIndexCommand && parts.length > 1) {
+                    fileName = parts.pop() as string;
+                }
+    
+                if (mod.onInteraction) {
+                    const lastParts = parts.slice(-2);
+    
+                    if (lastParts.length === 2) {
+                        interactionStructure = {
+                            subcommandGroupName: lastParts[1],
+                            subcommandName: fileName,
+                            commandName: lastParts[0],
+                        };
+                    } else if (lastParts.length === 1) {
+                        interactionStructure = {
+                            commandName: parts[0],
+                            subcommandName: fileName,
+                        }
+                    } else {
+                        interactionStructure.commandName = fileName
+                    }
+    
+                    mod.structure.interaction = interactionStructure as CommandStructure['interaction'];
+                }
+    
+                if (mod.onMessage) {
+                    messageStructure = {
+                        commandName: fileName,
+                        parts,
+                    };
+    
+                    mod.structure.message = messageStructure as CommandStructure['message'];
+                }
+    
+                stats.loaded++
+                this._commands.push(mod);
             }
-
-            this._commands.push(mod);
         }
+        
+        if (this._commands.length > 0) {
+            logger.header(({ orange }) => orange('✦ COMMANDS ✦'));
 
-        if (this.slashCommands.length > 0) {
-            logger.borderBox(`🌐 Slash Commands (${this.slashCommands.length})`);
-            for (const cmd of this.slashCommands) {
-                logger.borderBox((c) => `${c.cyan('⤷')} ${c.cyanBright(cmd.name)}`)
+            for (const cmd of [
+                ...this.onlyBothCommands,
+                ...this.onlySlashCommands,
+                ...this.onlyMessageCommands
+            ]) {
+                logger.log(({ custom }) => {
+                    const types = [];
+                    const flags = [];
+
+                    if (cmd.onInteraction) {
+                        types.push('🌐')
+                    }
+
+                    if (cmd.onMessage) {
+                        types.push('💬')
+                    }
+
+                    if (cmd.access?.user?.isDeveloper) {
+                        flags.push('🔑')
+                    }
+
+                    if (cmd.access?.user?.isStaff) {
+                        flags.push('🔰')
+                    }
+
+                    if (cmd.access?.user?.isGuildOwner) {
+                        flags.push('👑')
+                    }
+
+                    if (cmd.access?.user?.isBetaTester) {
+                        flags.push('🔨')
+                    }
+
+                    if (cmd.access?.channel?.isNSFW) {
+                        flags.push('🔞');
+                    }
+
+                    if (cmd.access?.guild?.isPartner) {
+                        flags.push('⭐');
+                    }
+
+                    const nameParts : (string | undefined | null)[] = [];
+
+                    if (cmd.onMessage && cmd?.messageCommand?.style !== 'slashCommand') {
+                        nameParts.push(cmd.name);
+                    } else {
+                        const { interaction, message } = cmd.structure
+                        if (interaction) {
+                            nameParts.push(
+                                interaction?.commandName,
+                                interaction?.subcommandGroupName,
+                                interaction?.subcommandName
+                            );
+                        } else if (message) {
+                            nameParts.push(
+                                ...message?.parts ?? [],
+                                message.commandName
+                            );
+                        }
+                    }
+
+                    const name = nameParts
+                        .filter((name) => typeof name === 'string')
+                        .map((name, pos) => {
+                            const color = pos === 0 ? '#ffcc5f' : pos === 1 ? '#fff383' : '#ffefd0'
+                            return custom(color, name);
+                        }).join(' ');
+
+                    let message = custom('#839aff', `[${types.join('/')}]`);
+
+                    if (flags.length) {
+                        message += custom('#839aff', ` <${flags.join('/')}>`);
+                    }
+
+                    return message.concat(` ${name}`);
+                });
             }
-        }
-
-        if (this.messageCommands.length > 0) {
-            logger.borderBox(`💬 Message Commands (${this.messageCommands.length})`);
-            for (const cmd of this.messageCommands) {
-                logger.borderBox((c) => `${c.cyan('⤷')} ${c.cyanBright(cmd.name)}`)
+    
+            logger.separator();
+            
+            if (stats.invalid) {
+                logger.info(({ redBright }) => `${redBright(stats.invalid)} invalid commands`, { arrowColor: 'redBright' });
             }
+    
+            logger.info(({ greenBright }) => `${greenBright(stats.loaded)} commands loaded`, { arrowColor: 'greenBright' });
+        } else {
+            logger.info(({ redBright }) => redBright(`No client commands were detected to load`), { arrowColor: 'red' });
         }
-
-        logger.bottomBorderBox('✅ Commands loaded');
-        console.log();
     }
 
     async syncSlashCommands() {
+        logger.info('Starting command synchronization with Discord..', { arrowColor: 'orangeBright' });
+
         if (!this.client.application) {
-            throw new Error('Client application is not ready.');
+            return logger.info(({ redBright }) => redBright('Synchronization could not be completed because the application is not yet ready'), { arrowColor: 'red' });
         }
 
         const sortCommands = (data: any) => {
@@ -170,16 +283,14 @@ export class CommandManager {
                 .sort((a: any, b: any) => {
                     if (a.required && !b.required) return -1;
                     if (!a.required && b.required) return 1;
-                    
-                    if (!([1, 2].includes(a.type) && [1, 2].includes(b.type))) {                        
+
+                    if (!([1, 2].includes(a.type) && [1, 2].includes(b.type))) {
                         return 0;
                     }
 
                     return a.name.localeCompare(b.name);
                 })
         };
-
-        logger.topBorderBox('Sync Slash Commands ⏳');
 
         let unrestrictedSlashCommandsData: RESTPostAPIApplicationCommandsJSONBody[] = [];
         let restrictedSlashCommandsData = new Collection<string, RESTPostAPIApplicationCommandsJSONBody[]>();
@@ -256,7 +367,7 @@ export class CommandManager {
                 !commandsCache
                 || JSON.stringify(commandsCache.unrestrictedSlashCommandsData) !== JSON.stringify(sortedUnrestricted)
             ) {
-                logger.borderBox(`🔁 » Refreshing ${sortedUnrestricted.length} unrestricted slash commands..`);
+                logger.info(({ yellowBright }) => `Refreshing ${yellowBright(sortedUnrestricted.length)} unrestricted slash-commands`, { arrowColor: 'orangeBright' });
                 await this.client.application.commands.set(sortedUnrestricted);
                 commandsCache = cache.write('commands', { ...commandsCache, unrestrictedSlashCommandsData: sortedUnrestricted });
             }
@@ -267,13 +378,13 @@ export class CommandManager {
                     !commandsCache
                     || JSON.stringify(commandsCache.restrictedSlashCommandsData?.[guildId as any]) !== JSON.stringify(sortedCommands)
                 ) {
-                    logger.borderBox(`🔁 » Refreshing restricted slash commands for guild ${guildId}..`);
+                    logger.info(({ yellowBright }) => `Refreshing restricted slash-commands for guild ${yellowBright(guildId)}`, { arrowColor: 'orangeBright' });
                     await this.client.application.commands.set(commands, guildId);
                     commandsCache = cache.write('commands', {
                         ...commandsCache,
                         restrictedSlashCommandsData: {
                             ...commandsCache?.restrictedSlashCommandsData,
-                            [guildId]: sortedCommands 
+                            [guildId]: sortedCommands
                         }
                     });
                 }
@@ -284,7 +395,7 @@ export class CommandManager {
                 .filter((guildId) => !restrictedSlashCommandsData.has(guildId));
 
             for (const guildId of outdatedRestrictedCommands) {
-                logger.borderBox(`🗑️ » Removing restricted slash commands for guild ${guildId}`);
+                logger.info(({ yellowBright }) => `Removing restricted slash-commands for guild ${yellowBright(guildId)}`, { arrowColor: 'orangeBright' });
                 await this.client.application.commands.set([], guildId);
 
                 const clearCommands = Object.fromEntries(
@@ -300,13 +411,11 @@ export class CommandManager {
                     restrictedSlashCommandsData: clearCommands,
                 });
             }
-
-            logger.bottomBorderBox('✅ » Sync completed successfully !');
+            
+            logger.info('Synchronization completed', { arrowColor: 'greenBright' });
         } catch (err) {
-            logger.bottomBorderBox(`❌ » Sync failed: ${err}`);
+            logger.info(({ redBright }) => `${redBright('Synchronization failed:')} ${err}`, { arrowColor: 'red' });
         }
-
-        console.log();
     }
 
     resolveSlashCommand(options: CommandManagerResolveSlashCommandOptions): Command | undefined {

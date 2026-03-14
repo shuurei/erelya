@@ -1,14 +1,9 @@
 import 'dotenv/config'
-
-const validEnv = ['DEV', 'PROD'];
-
-const env = process.env.ENV;
-if (!env || !validEnv.some((v) => v === env)) {
-    throw new Error(`ENV must be one of: ${validEnv.join(', ')}`);
-}
-
 import './helpers/extends/String'
 import './helpers/extends/Math'
+
+const env = process.env.ENV;
+process.title = `${pkg.name.toUpperCase()} - Terminal`
 
 import pkg from '@pkg'
 import { version as djsVersion } from 'discord.js'
@@ -18,7 +13,9 @@ import logger from './utils/logger'
 import client from './client/instance'
 
 import { GlobalFonts } from '@napi-rs/canvas'
+
 import path from 'path'
+import os from 'os'
 
 GlobalFonts.registerFromPath(path.join(
     process.cwd(),
@@ -29,33 +26,50 @@ GlobalFonts.registerFromPath(path.join(
     'Quantico-Bold.ttf'
 ), 'Quantico Bold');
 
-const projectName = pkg.name.toCapitalize();
-process.title = `${projectName} - Terminal`
-
-const entries = [
-    ['ENV', env],
-    ['DEBUG', process.env.DEBUG == 'true' ? '✅' : '❌'],
-    ['Node', process.version],
-    ['Discord.js', `v${djsVersion}`],
-    ['Prisma', `v${Prisma.prismaVersion.client}`],
+const ASCII_LOGO = [
+    `@@@@@@@@  @@@@@@@   @@@@@@@@  @@@       @@@ @@@   @@@@@@`,
+    `@@@@@@@@  @@@@@@@@  @@@@@@@@  @@@       @@@ @@@  @@@@@@@@`,
+    `@@!       @@!  @@@  @@!       @@!       @@! !@@  @@!  @@@`,
+    `!@!       !@!  @!@  !@!       !@!       !@! @!!  !@!  @!@`,
+    `@!!!:!    @!@!!@!   @!!!:!    @!!        !@!@!   @!@!@!@!`,
+    `!!!!!:    !!@!@!    !!!!!:    !!!         @!!!   !!!@!!!!`,
+    `!!:       !!: :!!   !!:       !!:         !!:    !!:  !!!`,
+    `:!:       :!:  !:!  :!:        :!:        :!:    :!:  !:!`,
+    ` :: ::::  ::   :::   :: ::::   :: ::::     ::    ::   :::`,
+    `: :: ::    :   : :  : :: ::   : :: : :     :      :   : :`
 ] as const;
 
-const maxLabelLength = Math.max(...entries.map(([label]) => label.length));
+logger.defaultMaxLineLength = ASCII_LOGO[1].length;
 
-logger.topBorderBox(({ cyanBright }) => cyanBright(projectName));
-for (let [label, value] of entries) {
-    logger.borderBox(({ yellowBright, whiteBright, greenBright, redBright }) => {
-        let colorValue = whiteBright;
+logger.log(({ gradient }) =>
+    ASCII_LOGO.map((line) => gradient('#5053ff', '#9650ff', line)).join('\n')
+);
 
-        if (label === 'ENV') {
-            colorValue = value === 'DEV' ? redBright : greenBright;
-        }
-
-        return `${yellowBright(label.padEnd(maxLabelLength))} ${colorValue(value)}`
-    });
-}
-logger.bottomBorderBox();
-
-console.log();
+logger.header(({ custom }) => custom(env === 'DEV' ? '#ff8f8f' : env === 'PROD' ? '#8fffab' : '#ffe18f', `✦ ${env} - v${pkg.version} ✦`));
+logger.list([
+    {
+        label: 'DiscordJs',
+        value: `v${djsVersion}`
+    },
+    {
+        label: 'NodeJs',
+        value: process.version
+    },
+    {
+        label: 'Prisma',
+        value: `v${Prisma.prismaVersion.client}`
+    }
+])
+logger.header(({ purpleBright }) => purpleBright('✦ OPERATING SYSTEM ✦'));
+logger.list([
+    {
+        label: 'Type',
+        value: os.version()
+    },
+    {
+        label: 'Version',
+        value: os.release()
+    },
+]);
 
 await client.start();

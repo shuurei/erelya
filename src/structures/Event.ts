@@ -12,14 +12,13 @@ import { CustomClient } from './CustomClient'
 import { BlacklistModel } from '@/database/core/models'
 
 export interface CustomClientEvents extends ClientEvents {
-    chatInputInteractionCreate: [ChatInputCommandInteraction],
-    buttonInteractionCreate: [ButtonInteraction],
-    commandCreate: [Command, Message | ChatInputCommandInteraction, string[] | null[]],
-    databaseDisconnected: [...args: any],
-    databaseReady: [...args: any],
-    blacklistCreate: [BlacklistModel, Guild, User, User],
-    blacklistTreated: [BlacklistModel],
-    hubReady: [Guild]
+    chatInputInteractionCreate: [ChatInputCommandInteraction];
+    buttonInteractionCreate: [ButtonInteraction];
+    commandCreate: [Command, Message | ChatInputCommandInteraction, string[] | null[]];
+    blacklistCreate: [BlacklistModel, Guild, User, User];
+    blacklistTreated: [BlacklistModel];
+    hubReady: [Guild];
+    clientSetup: [CustomClient];
 };
 
 export interface EventRunOptions<Event extends keyof CustomClientEvents> {

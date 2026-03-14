@@ -13,7 +13,7 @@ const _ensureCacheDirExists = () => {
 
 export const cache = {
     logger: logger.use({
-        prefix: (c) => c.yellow('[CACHE]')
+        prefix: ({ yellow }) => yellow('[CACHE]')
     }),
     write(key: string, data: unknown) {
         _ensureCacheDirExists();

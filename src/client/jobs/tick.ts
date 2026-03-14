@@ -10,7 +10,7 @@ import { handleMemberCheckLevelUp } from '../handlers/member-check-level-up'
 import { handleMemberDailyQuestSync } from '../handlers/member-daily-quest-sync'
 import { handleMemberDailyQuestNotify } from '../handlers/member-daily-quest-notify'
 
-jobsLogger.borderBox('🔗 » Tick Job started');
+jobsLogger.info(({ yellowBright }) => `${yellowBright('Tick Job')} started`, { arrowColor: 'greenBright' });
 
 const factor = (condition: any, value = 0) => condition ? value : 0;
 
