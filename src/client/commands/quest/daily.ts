@@ -32,6 +32,8 @@ export default new Command({
         }
     },
     async onInteraction(interaction) {
+        await interaction.deferReply();
+
         const guild = interaction.guild;
         const guildId = guild.id;
 
@@ -52,7 +54,7 @@ export default new Command({
             !(guildEcoModule?.isActive || guildLevelModule?.isActive)
             || !(isVoiceQuestEnabeld || isMessageQuestEnabled)
         ) {
-            return await interaction.reply({
+            return await interaction.editReply({
                 embeds: [
                     EmbedUI.createErrorMessage({
                         title: '// Module désactivé',
@@ -166,7 +168,7 @@ export default new Command({
                 disabled: !isCompleted
             });
 
-        const msg = await interaction.reply({
+        const msg = await interaction.editReply({
             embeds: [
                 EmbedUI.create(payload)
             ],
