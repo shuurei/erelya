@@ -1,7 +1,7 @@
 {
 	"name": "erelya",
-	"version": "1.9.9",
-	"description": "Erelya Bot is an open-source Discord bot offering moderation tools, fun commands, and customizable features for your community ! :)",
+	"version": "26.09.11",
+	"description": "Erelya Bot is an Open-Source Discord bot offering moderation tools, fun commands, and customizable features for your community ! :)",
 	"type": "module",
 	"license": "CC-BY-NC-ND-4.0",
 	"keywords": [
