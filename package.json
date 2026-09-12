@@ -1,6 +1,6 @@
 {
 	"name": "erelya",
-	"version": "26.09.11",
+	"version": "26.09.12",
 	"description": "Erelya Bot is an Open-Source Discord bot offering moderation tools, fun commands, and customizable features for your community ! :)",
 	"type": "module",
 	"license": "CC-BY-NC-ND-4.0",
@@ -23,12 +23,12 @@
 		"db:generate": "npx prisma generate"
 	},
 	"dependencies": {
-		"@napi-rs/canvas": "^1.0.0",
-		"@prisma/adapter-mariadb": "^7.8.0",
+		"@napi-rs/canvas": "^1.0.2",
+		"@prisma/adapter-mariadb": "^7.10.0",
 		"@prisma/client": "7.8.0",
 		"chroma-js": "^3.2.0",
 		"croner": "^10.0.1",
-		"discord.js": "14.26.4",
+		"discord.js": "14.27.0",
 		"dotenv": "^17.4.2",
 		"fast-glob": "^3.3.3",
 		"luxon": "^3.7.2",
@@ -36,13 +36,13 @@
 	},
 	"devDependencies": {
 		"@types/chroma-js": "^3.1.2",
-		"@types/luxon": "^3.7.1",
-		"@types/node": "^25.9.1",
+		"@types/luxon": "^3.7.5",
+		"@types/node": "^25.9.6",
 		"prisma": "7.8.0",
-		"tsc-alias": "^1.8.17",
+		"tsc-alias": "^1.9.4",
 		"tsup": "^8.5.1",
-		"tsx": "^4.22.3",
-		"typescript": "^6.0.3"
+		"tsx": "^4.23.13",
+		"typescript": "^7.0.2"
 	},
 	"engines": {
 		"node": "^24"
