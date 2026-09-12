@@ -9,12 +9,15 @@ import { formatCompactNumber, formatTimeLeft, getDominantColor, randomNumber, tz
 
 import { memberService } from '@/database/services'
 
-const MIN_REWARD = 250;
-const MAX_REWARD = 750;
+const MIN_REWARD = 750;
+const MAX_REWARD = 1250;
 
 const STREAK_STEP = 7;
 
 const STREAK_MULTIPLIERS = [
+    { days: 365, multiplier: 10 },
+    { days: 300, multiplier: 8 },
+    { days: 200, multiplier: 6 },
     { days: 100, multiplier: 4 },
     { days: 75, multiplier: 3.5 },
     { days: 50, multiplier: 3 },
