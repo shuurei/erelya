@@ -6,10 +6,7 @@ import { tzMap } from '@/utils'
 
 import { generateDailyQuest } from '@/utils/daily-quest'
 
-export async function handleMemberDailyQuestSync(
-    memberKey: { userId: string; guildId: string },
-    guildLocale: Locale
-) {
+export async function handleMemberDailyQuestSync(memberKey: { userId: string; guildId: string }, guildLocale: Locale) {
     const guildTZ = tzMap[guildLocale] || 'UTC';
 
     let quest = await memberDailyQuestService.findById(memberKey);
