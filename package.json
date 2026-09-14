@@ -1,6 +1,6 @@
 {
 	"name": "erelya",
-	"version": "26.09.12",
+	"version": "26.09.13",
 	"description": "Erelya Bot is an Open-Source Discord bot offering moderation tools, fun commands, and customizable features for your community ! :)",
 	"type": "module",
 	"license": "CC-BY-NC-ND-4.0",
@@ -23,7 +23,7 @@
 		"db:generate": "npx prisma generate"
 	},
 	"dependencies": {
-		"@napi-rs/canvas": "^1.0.2",
+		"@napi-rs/canvas": "1.0.2",
 		"@prisma/adapter-mariadb": "^7.10.0",
 		"@prisma/client": "7.8.0",
 		"chroma-js": "^3.2.0",

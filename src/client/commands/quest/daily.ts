@@ -14,22 +14,14 @@ import { formatTimeLeft, formatTimeLeftFromMinutes, getDominantColor, tzMap } fr
 import { DateTime } from 'luxon'
 
 import { handleMemberDailyQuestSync } from '@/client/handlers/member-daily-quest-sync'
-import { calculateQuestBonusMultiplier, VOICE_POOL } from '@/utils/daily-quest'
+import { calculateQuestBonusMultiplier, STREAMING_POOL, VOICE_POOL } from '@/utils/daily-quest'
 
 export default new Command({
-    nameLocalizations: {
-        fr: 'quotidienne'
-    },
+    nameLocalizations: { fr: 'quotidienne' },
     description: "🎯 View your daily quest",
-    descriptionLocalizations: {
-        fr: "🎯 Consulte ta quête quotidienne du jour"
-    },
+    descriptionLocalizations: { fr: "🎯 Consulte ta quête quotidienne du jour" },
     access: {
-        guild: {
-            modules: {
-                quest: true
-            }
-        }
+        guild: { modules: { quest: true } }
     },
     async onInteraction(interaction) {
         await interaction.deferReply();
@@ -48,12 +40,7 @@ export default new Command({
         ]);
 
         const isVoiceQuestEnabeld = guildQuestModule?.settings?.isVoiceQuestEnabeld;
-        const isMessageQuestEnabled = guildQuestModule?.settings?.isMessageQuestEnabled;
-
-        if (
-            !(guildEcoModule?.isActive || guildLevelModule?.isActive)
-            || !(isVoiceQuestEnabeld || isMessageQuestEnabled)
-        ) {
+        if (!(guildEcoModule?.isActive || guildLevelModule?.isActive) || !(isVoiceQuestEnabeld)) {
             return await interaction.editReply({
                 embeds: [
                     EmbedUI.createErrorMessage({
@@ -80,38 +67,43 @@ export default new Command({
         let questDatabase = await handleMemberDailyQuestSync(memberKey, guildLocale);
 
         const nowInGuildTZ = DateTime.now().setZone(guildTZ);
-
         const midnightInGuildTZ = nowInGuildTZ.endOf('day');
 
         const quest = {
             voice: VOICE_POOL.find((f) => f.value === questDatabase?.voiceMinutesTarget),
+            streaming: STREAMING_POOL.find((f) => f.value === questDatabase?.streamingMinutesTarget)
         }
 
         const bonusMultiplier = calculateQuestBonusMultiplier(quest);
 
         const fields = [];
 
-        if (isVoiceQuestEnabeld && quest.voice) {
-            fields.push({
-                name: `🔊 Vocal`,
-                value: [
-                    `**${formatTimeLeftFromMinutes(questDatabase.voiceMinutesProgress)}** / **${formatTimeLeftFromMinutes(quest.voice.value)}**`,
-                    createProgressBar(Math.max(0, questDatabase.voiceMinutesProgress / quest.voice.value), { length: 7, asciiChar: true, showPercentage: true }),
-                ].join('\n'),
-                inline: true
-            });
-        }
-
-        if (!isVoiceQuestEnabeld) {
-            quest.voice = {} as any
-            quest.voice!.rewards = {
-                activityXp: 0,
-                guildCoins: 0
+        if (isVoiceQuestEnabeld) {
+            if (quest.voice) {
+                fields.push({
+                    name: `🔊 Vocal`,
+                    value: [
+                        `**${formatTimeLeftFromMinutes(questDatabase.voiceMinutesProgress)}** / **${formatTimeLeftFromMinutes(quest.voice.value)}**`,
+                        createProgressBar(Math.max(0, questDatabase.voiceMinutesProgress / quest.voice.value), { length: 7, asciiChar: true, showPercentage: true }),
+                    ].join('\n'),
+                    inline: true
+                });
+            } else if (quest.streaming) {
+                fields.push({
+                    name: `🎥 Streaming`,
+                    value: [
+                        `**${formatTimeLeftFromMinutes(questDatabase.streamingMinutesProgress)}** / **${formatTimeLeftFromMinutes(quest.streaming.value)}**`,
+                        createProgressBar(Math.max(0, questDatabase.streamingMinutesProgress / quest.streaming.value), { length: 7, asciiChar: true, showPercentage: true }),
+                    ].join('\n'),
+                    inline: true
+                });
             }
         }
 
-        const guildCoinsReward = Math.floor((quest.voice?.rewards.guildCoins ?? 0) * bonusMultiplier);
-        const activityXpReward = Math.floor((quest.voice?.rewards.activityXp ?? 0) * bonusMultiplier);
+        const current = quest.voice ? quest.voice : quest.streaming;
+
+        const guildCoinsReward = Math.floor((current!.rewards.guildCoins ?? 0) * bonusMultiplier);
+        const activityXpReward = Math.floor((current!.rewards.activityXp ?? 0) * bonusMultiplier);
 
         fields.push({
             name: 'Récompenses',
@@ -152,7 +144,7 @@ export default new Command({
                 EmbedUI.create(payload)
             ],
             components: [
-                createActionRow([ getClaimButton() ])
+                createActionRow([getClaimButton()])
             ]
         });
 
@@ -175,7 +167,7 @@ export default new Command({
             if (guildEcoModule?.isActive) {
                 await memberService.addGuildCoins(memberKey, guildCoinsReward);
             }
-            
+
             if (guildLevelModule?.isActive) {
                 await handleMemberCheckLevelUp({
                     member,
@@ -185,12 +177,8 @@ export default new Command({
             }
 
             await i.update({
-                embeds: [
-                    EmbedUI.create(payload)
-                ],
-                components: [
-                    createActionRow([ getClaimButton() ])
-                ]
+                embeds: [ EmbedUI.create(payload) ],
+                components: [ createActionRow([getClaimButton()]) ]
             });
 
             collector.stop();

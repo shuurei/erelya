@@ -14,9 +14,9 @@ export async function handleMemberDailyQuestNotify({
 }) {
     if (oldQuest.isClaimed || !channel?.isSendable() || !member) return;
 
-    const messageJustCompleted = oldQuest.messagesSentTarget
-        ? oldQuest.messagesSentProgress < oldQuest.messagesSentTarget &&
-        newQuest.messagesSentProgress >= newQuest.messagesSentTarget!
+    const streamingJustCompleted = oldQuest.streamingMinutesTarget
+        ? oldQuest.streamingMinutesProgress < oldQuest.streamingMinutesTarget &&
+        newQuest.streamingMinutesProgress >= newQuest.streamingMinutesTarget!
         : false;
 
     const voiceJustCompleted = oldQuest.voiceMinutesTarget
@@ -24,19 +24,19 @@ export async function handleMemberDailyQuestNotify({
         newQuest.voiceMinutesProgress >= newQuest.voiceMinutesTarget!
         : false;
 
-    const isMessageCompleted = newQuest.messagesSentTarget
-        ? newQuest.messagesSentProgress >= newQuest.messagesSentTarget!
+    const isStreamingCompleted = newQuest.streamingMinutesTarget
+        ? newQuest.streamingMinutesProgress >= newQuest.streamingMinutesProgress!
         : true;
 
     const isVoiceCompleted = newQuest.voiceMinutesTarget
         ? newQuest.voiceMinutesProgress >= newQuest.voiceMinutesTarget!
         : true;
 
-    if (isMessageCompleted && isVoiceCompleted) {
+    if (isStreamingCompleted && isVoiceCompleted) {
         await channel.send(`\`${member.user.username}\` **Quête quotidienne complétée !** Récompense disponible 🎁`);
     } else if (voiceJustCompleted) {
         await channel.send(`\`${member.user.username}\` **Quête quotidienne** 🎯 — Objectif vocal complété (**1 / 2**)`);
-    } else if (messageJustCompleted) {
+    } else if (streamingJustCompleted) {
         await channel.send(`\`${member.user.username}\` **Quête quotidienne** 🎯 — Objectif message complété (**1 / 2**)`);
     }
 }

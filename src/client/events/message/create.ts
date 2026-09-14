@@ -390,32 +390,5 @@ export default new Event({
                 }
             }
         }
-
-        if (
-            guildQuestModule?.isActive
-                && !channelScopeBlacklist.QUEST
-                && guildQuestModule.settings?.useAntiSpam ? (userSpamData?.messageCount ?? 0) <= 8 : true
-        ) {
-            const quest = await handleMemberDailyQuestSync({
-                userId,
-                guildId
-            }, message.guild.preferredLocale);
-
-            if (quest && !quest.isClaimed && quest.messagesSentTarget && (quest.messagesSentTarget != quest.messagesSentProgress)) {
-                const newQuest = await memberDailyQuestService.updateOrCreate({
-                    userId,
-                    guildId,
-                }, {
-                    messagesSentProgress: quest.messagesSentProgress + 1
-                });
-
-                await handleMemberDailyQuestNotify({
-                    member: message.member,
-                    channel: message.channel,
-                    oldQuest: quest,
-                    newQuest
-                });
-            }
-        }
     }
 });

@@ -26,13 +26,13 @@ export async function handleMemberDailyQuestSync(
     }
 
     if (!quest || !isSameDay) {
-        const voice = generateDailyQuest();
+        const { voice, streaming } = generateDailyQuest();
 
         quest = await memberDailyQuestService.updateOrCreate(memberKey, {
             voiceMinutesTarget: voice?.value ?? null,
             voiceMinutesProgress: 0,
-            messagesSentTarget: null,
-            messagesSentProgress: 0,
+            streamingMinutesTarget: streaming?.value ?? null,
+            streamingMinutesProgress: 0,
             startAt: new Date(),
             isClaimed: false
         });

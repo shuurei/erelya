@@ -4,10 +4,10 @@ model MemberDailyQuest {
   member  Member @relation(fields: [userId, guildId], references: [userId, guildId], onDelete: Cascade)
 
   voiceMinutesTarget Int?
-  messagesSentTarget Int?
+  streamingMinutesTarget Int?
 
   voiceMinutesProgress Int @default(0)
-  messagesSentProgress Int @default(0)
+  streamingMinutesProgress Int @default(0)
 
   startAt   DateTime?
   isClaimed Boolean   @default(false)
