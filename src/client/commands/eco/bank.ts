@@ -50,6 +50,10 @@ export default new Command({
             }
         ]
     },
+    messageCommand: {
+        style: 'flat',
+        aliases: ['b', 'bank', 'bal'],
+    },
     access: {
         guild: { modules: { eco: true } }
     },
