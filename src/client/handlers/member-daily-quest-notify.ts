@@ -22,7 +22,7 @@ export async function handleMemberDailyQuestNotify({
         ? newQuest.voiceMinutesProgress >= newQuest.voiceMinutesTarget!
         : true;
 
-    if (isStreamingCompleted || isVoiceCompleted) {
+    if (isStreamingCompleted && isVoiceCompleted) {
         await channel.send(`\`${member.user.username}\` **Quête quotidienne complétée !** Récompense disponible 🎁`);
     }
 }
