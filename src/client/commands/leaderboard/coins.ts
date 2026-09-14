@@ -15,27 +15,18 @@ const buildEmbed = async (member: GuildMember) => {
     const members = await db.member.findMany({
         where: {
             guildId,
-            OR: [
-                { guildCoins: { gt: 0 } },
-                { vault: { guildCoins: { gt: 0 } } }
-            ]
-        },
-        include: {
-            vault: true
+            OR: [{ guildCoins: { gt: 0 } }]
         }
-    })
+    });
 
     if (!members.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
     }
 
     const ranked = members
-        .map(m => ({
-            ...m,
-            totalCoins: (m.guildCoins ?? 0) + (m.vault?.guildCoins ?? 0)
-        }))
+        .map(m => ({ ...m, totalCoins: (m.guildCoins ?? 0) }))
         .filter(m => m.totalCoins > 0)
-        .sort((a, b) => b.totalCoins - a.totalCoins)
+        .sort((a, b) => b.totalCoins - a.totalCoins);
 
     if (!ranked.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
@@ -103,11 +94,7 @@ export default new Command({
         fr: '🏆 Affiche le classement des membres les plus riches du serveur'
     },
     access: {
-        guild: {
-            modules: {
-                eco: true
-            }
-        }
+        guild: { modules: { eco: true } }
     },
     messageCommand: {
         style: 'flat',
