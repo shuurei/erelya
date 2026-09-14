@@ -100,7 +100,7 @@ export default new Command({
             }
         }
 
-        const current = quest.voice ? quest.voice : quest.streaming;
+        const current = quest.voice ?? quest.streaming!;
 
         const guildCoinsReward = Math.floor((current!.rewards.guildCoins ?? 0) * bonusMultiplier);
         const activityXpReward = Math.floor((current!.rewards.activityXp ?? 0) * bonusMultiplier);
@@ -113,7 +113,7 @@ export default new Command({
             ].filter(Boolean).join('\n')
         });
 
-        const isCompleted = (quest.voice ? questDatabase.voiceMinutesProgress === quest.voice.value : true);
+        const isCompleted = questDatabase[`${quest.voice ? 'voice' : 'streaming'}MinutesProgress`] === current.value;
 
         const payload = {
             color: memberAvatarDominantColor,

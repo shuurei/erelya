@@ -26,7 +26,6 @@ model Member {
   lastHeistAt    DateTime?
   lastHeistedAt  DateTime?
 
-  vault       MemberVault?
   dailyQuests MemberDailyQuest[]
 
   @@id([userId, guildId])
