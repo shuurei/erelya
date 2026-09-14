@@ -129,11 +129,11 @@ new Cron('* * * * *', async () => {
                 const quest = await handleMemberDailyQuestSync({ userId, guildId }, session.guildLocale);
                 const questType = quest.voiceMinutesTarget ? 'voice' : 'streaming';
 
-                if (questType === 'voice' || session.flags.isStreaming) {
+                if (!quest.isClaimed && (questType === 'voice' || session.flags.isStreaming)) {
                     const questMinutesTarget = quest[`${questType}MinutesTarget`];
                     const questMinutesProgress = quest[`${questType}MinutesProgress`];
 
-                    if (!quest.isClaimed && questMinutesTarget && questMinutesProgress < questMinutesTarget) {
+                    if (questMinutesTarget && (questMinutesProgress < questMinutesTarget)) {
                         const newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
                             [`${questType}MinutesProgress`]: questMinutesProgress + 1
                         });
