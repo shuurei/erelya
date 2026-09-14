@@ -14,15 +14,11 @@ export async function handleMemberDailyQuestNotify({
 }) {
     if (oldQuest.isClaimed || !channel?.isSendable() || !member) return;
 
-    const isStreamingCompleted = newQuest.streamingMinutesTarget
-        ? newQuest.streamingMinutesProgress >= newQuest.streamingMinutesProgress!
-        : true;
+    const questType = newQuest.voiceMinutesTarget ? 'voice' : 'streaming';
+    const questMinutesTarget = [`${questType}MinutesTarget`];
+    const questMinutesProgress = [`${questType}MinutesProgress`];
 
-    const isVoiceCompleted = newQuest.voiceMinutesTarget
-        ? newQuest.voiceMinutesProgress >= newQuest.voiceMinutesTarget!
-        : true;
-
-    if (isStreamingCompleted && isVoiceCompleted) {
-        await channel.send(`\`${member.user.username}\` **Quête quotidienne complétée !** Récompense disponible 🎁`);
+    if (questMinutesProgress >= questMinutesTarget) {
+        await channel.send(`🎁 \`${member.user.username}\` **Quête ${questType ? 'vocal' : 'streamin'} quotidienne complétée !** La récompense est disponible :)`);
     }
 }
