@@ -125,17 +125,28 @@ new Cron('* * * * *', async () => {
             }
 
             if (guildQuestModule?.isActive && !channelScopeBlacklist.QUEST && !(session.flags.isDeaf || session.flags.isMuted)) {
-                const quest = await handleMemberDailyQuestSync({
-                    userId,
-                    guildId
-                }, session.guildLocale);
+                const quest = await handleMemberDailyQuestSync({ userId, guildId }, session.guildLocale);
 
                 if (quest && !quest.isClaimed && quest.voiceMinutesTarget && (quest.voiceMinutesTarget != quest.voiceMinutesProgress)) {
-                    const newQuest = await memberDailyQuestService.updateOrCreate({
-                        userId,
-                        guildId,
-                    }, {
+                    const newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
                         voiceMinutesProgress: quest.voiceMinutesProgress + 1
+                    });
+
+                    await handleMemberDailyQuestNotify({
+                        member: guild.members.cache.get(userId),
+                        channel: guild.channels.cache.get(session.channelId),
+                        oldQuest: quest,
+                        newQuest
+                    });
+                }
+            }
+
+            if (guildQuestModule?.isActive && !channelScopeBlacklist.QUEST && !(session.flags.isDeaf || session.flags.isMuted) && session.flags.isStreaming) {
+                const quest = await handleMemberDailyQuestSync({ userId, guildId }, session.guildLocale);
+
+                if (quest && !quest.isClaimed && quest.streamingMinutesTarget && (quest.streamingMinutesTarget != quest.streamingMinutesProgress)) {
+                    const newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
+                        streamingMinutesProgress: quest.streamingMinutesProgress + 1
                     });
 
                     await handleMemberDailyQuestNotify({
