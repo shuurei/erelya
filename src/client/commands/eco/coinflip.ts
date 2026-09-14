@@ -9,22 +9,15 @@ import { createMediaGallery } from '@/ui/components/common'
 const MIN_BET = 100;
 const MAX_BET = 100_000;
 
-const handleCommand = async ({
-    amount,
-    guildId,
-    member
-}: {
+const handleCommand = async ({ amount, guildId, member }: {
     amount: number | 'max';
     guildId: string;
     member: GuildMember;
 }) => {
-    const balance = await memberService.getTotalGuildCoins({
-        guildId,
-        userId: member.id
-    });
+    const { guildCoins } = await memberService.findById({ guildId, userId: member.id }) ?? { guildCoins: 0 };
 
     if (typeof amount === 'string' && amount === 'max') {
-        amount = Math.min(balance.total, MAX_BET);
+        amount = Math.min(guildCoins, MAX_BET);
     }
 
     amount = +amount;
@@ -65,7 +58,7 @@ const handleCommand = async ({
         ];
     }
 
-    if (balance.total < amount) {
+    if (guildCoins < amount) {
         return [
             {
                 attachment: await createNotifCard({
@@ -78,7 +71,6 @@ const handleCommand = async ({
     }
 
     const win = Math.random() < 0.5;
-
     if (win) {
         await memberService.addGuildCoins({ guildId, userId: member.id }, amount);
 
@@ -92,14 +84,14 @@ const handleCommand = async ({
             },
             {
                 attachment: await createNotifCard({
-                    text: `[Nouveau solde : ${(balance.total + amount).toLocaleString('en')} pièces.]`,
+                    text: `[Nouveau solde : ${(guildCoins + amount).toLocaleString('en')} pièces.]`,
                 }),
                 name: 'newBalance.png'
             }
         ];
     }
 
-    await memberService.removeGuildCoinsWithVault({ guildId, userId: member.id }, amount);
+    await memberService.removeGuildCoins({ guildId, userId: member.id }, amount);
 
     return [
         {
@@ -111,7 +103,7 @@ const handleCommand = async ({
         },
         {
             attachment: await createNotifCard({
-                text: `[Nouveau solde : ${(balance.total - amount).toLocaleString('en')} pièces.]`,
+                text: `[Nouveau solde : ${(guildCoins - amount).toLocaleString('en')} pièces.]`,
             }),
             name: 'newBalance.png'
         }
@@ -120,9 +112,7 @@ const handleCommand = async ({
 
 export default new Command({
     description: '🎰 Execute a coin flip to wager guild coins',
-    descriptionLocalizations: {
-        fr: '🎰 Lancez une pièce pour miser des pièces du serveur'
-    },
+    descriptionLocalizations: { fr: '🎰 Lancez une pièce pour miser des pièces du serveur' },
     slashCommand: {
         arguments: [
             {
@@ -136,15 +126,11 @@ export default new Command({
             }
         ]
     },
-    messageCommand: {
-        style: 'flat',
-    },
+    messageCommand: { style: 'flat' },
     access: {
         guild: {
             modules: {
-                eco: {
-                    isGamblingEnabled: true
-                }
+                eco: { isGamblingEnabled: true }
             }
         }
     },

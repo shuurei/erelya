@@ -72,14 +72,14 @@ const handleCommand = async ({
         });
     }
 
-    const balance = await memberService.getTotalGuildCoins({
+    const { guildCoins } = await memberService.findById({
         guildId,
         userId: fromUserId
-    });
+    }) ?? { guildCoins: 0 };
 
     if (typeof amount === 'string') {
         if (amount === 'all') {
-            amount = Math.max(balance.total, 0);
+            amount = Math.max(guildCoins, 0);
         } else {
             amount = parseInt(amount);
         }
@@ -99,7 +99,7 @@ const handleCommand = async ({
         });
     }
 
-    if (balance.total < amount) {
+    if (guildCoins < amount) {
         return await reply({
             files: [
                 {
@@ -160,7 +160,7 @@ const handleCommand = async ({
                 model: { value: tx.member }
             });
 
-            await memberService.removeGuildCoinsWithVault.call(ctx, { guildId, userId: fromUserId }, amount);
+            await memberService.removeGuildCoins.call(ctx, { guildId, userId: fromUserId }, amount);
             await memberService.addGuildCoins.call(ctx, { guildId, userId: toUserId }, amount);
         });
 
@@ -174,7 +174,7 @@ const handleCommand = async ({
             },
             {
                 attachment: await createNotifCard({
-                    text: `[Nouveau solde : ${(balance.total - amount).toLocaleString('en')}.]`,
+                    text: `[Nouveau solde : ${(guildCoins - amount).toLocaleString('en')}.]`,
                 }),
                 name: 'info.png'
             }

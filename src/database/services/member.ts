@@ -10,7 +10,6 @@ import {
     MemberUpsertArgs,
     MemberWhereUniqueInput,
 } from '@/database/core/models'
-import { memberVaultService, tierCapacity } from './member-vault'
 import { Prisma } from '../core/client'
 
 export type MemberCreateInputWithoutUserAndGuild = Omit<MemberCreateInput, 'user' | 'guild'>
@@ -192,27 +191,6 @@ class MemberService {
     }
 
     // -- Guild Points -- //
-    async getTotalGuildCoins(where: MemberWhere) {
-        const vault = await memberVaultService.findOrCreate(where, {
-            include: {
-                member: {
-                    select: {
-                        guildCoins: true
-                    }
-                }
-            }
-        });
-
-        const inVault = vault.guildCoins;
-        const inWallet = vault.member.guildCoins;
-
-        return {
-            inVault,
-            inWallet,
-            total: inVault + inWallet
-        }
-    }
-
     async addGuildCoins(where: MemberWhere, amount: number, options?: NumberFieldOptions) {
         return await this._updateNumberField(where, {
             field: 'guildCoins',
@@ -227,124 +205,11 @@ class MemberService {
         }, options);
     }
 
-    async removeGuildCoinsWithVault(where: MemberWhere, amount: number) {
-        const vault = await memberVaultService.findOrCreate(where, {
-            include: {
-                member: {
-                    select: {
-                        guildCoins: true
-                    }
-                }
-            }
-        });
-
-        return await db.$transaction(async (tx) => {
-            const total = vault.guildCoins + vault.member.guildCoins;
-
-            if (total < amount) {
-                throw new Error('Not enough guild coins in vault and wallet');
-            }
-
-            let remainingAmount = amount;
-
-            let vaultDeduction = 0;
-            let memberDeduction = 0;
-
-            if (vault.guildCoins > 0) {
-                vaultDeduction = Math.min(vault.guildCoins, remainingAmount);
-                remainingAmount -= vaultDeduction;
-            }
-
-            if (remainingAmount > 0) {
-                memberDeduction = remainingAmount;
-            }
-
-            const vaultCtx = Object.create(memberVaultService, {
-                model: { value: tx.memberVault }
-            });
-
-            if (vaultDeduction > 0) {
-                await memberVaultService.removeGuildCoins.call(vaultCtx, where, vaultDeduction);
-            }
-
-            const memberCtx = Object.create(this, {
-                model: { value: tx.member }
-            });
-
-            if (memberDeduction > 0) {
-                await this.removeGuildCoins.call(memberCtx, where, memberDeduction);
-            }
-
-            return await this.findById.call(memberCtx, where, {
-                include: {
-                    vault: true
-                }
-            });
-        });
-    }
-
     async setGuildCoins(where: MemberWhere, value: number, options?: NumberFieldOptions) {
         return await this._setNumberField(where, {
             field: 'guildCoins',
             value
         }, options);
-    }
-
-    async depositGuildCoins(where: MemberWhere, amount: number | 'all') {
-        const vault = await memberVaultService.findOrCreate(where, {
-            include: {
-                member: {
-                    select: {
-                        guildCoins: true,
-                    }
-                }
-            }
-        });
-
-        return await db.$transaction(async (tx) => {
-            const maxCapacity = tierCapacity[vault.capacityTier].guildCoins.capacity;
-            const currentInVault = vault.guildCoins;
-            const availableCapacity = maxCapacity - currentInVault;
-
-            if (availableCapacity <= 0) {
-                throw new Error('The vault is already full');
-            }
-
-            const inWallet = vault.member.guildCoins;
-
-            let toDeposit: number;
-
-            if (amount === 'all') {
-                toDeposit = Math.min(inWallet, availableCapacity);
-            } else {
-                toDeposit = Math.clamp(Math.min(inWallet, amount), 0, availableCapacity);
-            }
-
-            const memberCtx = Object.create(this, {
-                model: { value: tx.member }
-            });
-
-            const vaultCtx = Object.create(memberVaultService, {
-                model: { value: tx.memberVault }
-            });
-
-            await this.removeGuildCoins.call(memberCtx, where, toDeposit);
-            await memberVaultService.addGuildCoins.call(vaultCtx, where, toDeposit);
-
-            const data = await this.findById(where, {
-                include: {
-                    vault: {
-                        select: {
-                            guildCoins: true,
-                        }
-                    }
-                }
-            });
-
-            return Object.assign(data as any, {
-                deposited: toDeposit
-            });
-        });
     }
 
     // -- Stats -- //

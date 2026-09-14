@@ -355,10 +355,7 @@ export default new Command({
             const userDatabase = await userService.findById(userId);
             const tagBoostPercent = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * (guildEcoModule?.settings?.tagRolePriceDiscount ?? 0)
 
-            const totalGuildPoints = (await memberService.getTotalGuildCoins({
-                userId,
-                guildId
-            })).total;
+            const { guildCoins } = (await memberService.findById({ userId, guildId })) ?? { guildCoins: 0 };
 
             return buildShopView({
                 shop: state.shop,
@@ -366,7 +363,7 @@ export default new Command({
                 page: state.page,
                 totalPages: Math.ceil(state.items.length / ITEMS_PER_PAGE),
                 color: state.shop.color ?? guildColor,
-                totalGuildPoints,
+                totalGuildPoints: guildCoins,
                 tagRolePriceDiscount: tagBoostPercent > 0.1 ? tagBoostPercent : 0
             });
         };
@@ -490,12 +487,9 @@ export default new Command({
                         }
                     }
 
-                    const totalGuildPoints = (await memberService.getTotalGuildCoins({
-                        userId,
-                        guildId
-                    })).total;
+                    const { guildCoins } = (await memberService.findById({ userId, guildId })) ?? { guildCoins: 0 };
 
-                    if (item.cost > totalGuildPoints) {
+                    if (item.cost > guildCoins) {
                         await refreshShop();
                         return await i.followUp({
                             flags: MessageFlags.Ephemeral,
@@ -561,10 +555,7 @@ export default new Command({
                                 item.stock--
                             }
 
-                            await memberService.removeGuildCoinsWithVault({
-                                userId,
-                                guildId
-                            }, item.cost);
+                            await memberService.removeGuildCoins({ userId, guildId }, item.cost);
 
                             for (const item of state.items) {
                                 if (i.member.roles.cache.get(item.roleId)) {
