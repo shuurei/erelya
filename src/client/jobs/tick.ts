@@ -19,7 +19,7 @@ new Cron('* * * * *', async () => {
     try {
         for (const [userId, session] of client.callSessions.cache) {
             const guild = client.guilds.cache.find((guild) => guild.id === session.guildId);
-            if (!guild) return;
+            if (!guild) continue;
 
             const now = Date.now();
             const elapsed = now - session.timestamp;
@@ -127,21 +127,17 @@ new Cron('* * * * *', async () => {
 
             if (guildQuestModule?.isActive && !channelScopeBlacklist.QUEST && !(session.flags.isDeaf || session.flags.isMuted)) {
                 const quest = await handleMemberDailyQuestSync({ userId, guildId }, session.guildLocale);
+                const questType = quest.voiceMinutesTarget ? 'voice' : 'streaming';
 
-                if (quest && !quest.isClaimed) {
-                    let newQuest : MemberDailyQuestModel | null = null;
+                if (questType === 'voice' || session.flags.isStreaming) {
+                    const questMinutesTarget = quest[`${questType}MinutesTarget`];
+                    const questMinutesProgress = quest[`${questType}MinutesProgress`];
 
-                    if (quest.voiceMinutesTarget && (quest.voiceMinutesTarget < quest.voiceMinutesProgress)) {
-                        newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
-                            voiceMinutesProgress: quest.voiceMinutesProgress + 1
+                    if (!quest.isClaimed && questMinutesTarget && questMinutesProgress < questMinutesTarget) {
+                        const newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
+                            [`${questType}MinutesProgress`]: questMinutesProgress + 1
                         });
-                    } else if (quest.streamingMinutesTarget && (quest.streamingMinutesTarget < quest.streamingMinutesProgress)) {
-                        newQuest = await memberDailyQuestService.updateOrCreate({ userId, guildId }, {
-                            streamingMinutesProgress: quest.streamingMinutesProgress + 1
-                        });
-                    }
 
-                    if (newQuest) {
                         await handleMemberDailyQuestNotify({
                             member: guild.members.cache.get(userId),
                             channel: guild.channels.cache.get(session.channelId),
