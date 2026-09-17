@@ -1,32 +1,38 @@
 import { Command } from '@/structures/Command'
 import { GuildMember } from 'discord.js'
 
-import db from '@/database/db'
-
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { MoreThan } from 'typeorm'
 
 const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id;
     const guild = member.guild;
 
-    const rankers = (await db.member.findMany({
-        where: {
-            guildId: guild.id,
-            OR: [
-                { callActiveMinutes: { gt: 0 } },
-                { callMutedMinutes: { gt: 0 } },
-                { callDeafMinutes: { gt: 0 } },
-            ]
-        },
+    const rankers = (await GuildMemberService.repo.find({
+        where: [
+            {
+                guildId: guild.id,
+                callActiveMinutes: MoreThan(0),
+            },
+            {
+                guildId: guild.id,
+                callMutedMinutes: MoreThan(0),
+            },
+            {
+                guildId: guild.id,
+                callDeafMinutes: MoreThan(0),
+            },
+        ]
     })).map(({ callActiveMinutes, callMutedMinutes, callDeafMinutes, ...ranker }) => {
-            return {
-                ...ranker,
-                voiceTotalMinutes: callActiveMinutes + callMutedMinutes + callDeafMinutes
-            }
-        }).sort((a, b) => b.voiceTotalMinutes - a.voiceTotalMinutes);
+        return {
+            ...ranker,
+            voiceTotalMinutes: callActiveMinutes + callMutedMinutes + callDeafMinutes
+        }
+    }).sort((a, b) => b.voiceTotalMinutes - a.voiceTotalMinutes);
 
     if (!rankers.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
@@ -44,7 +50,7 @@ const buildEmbed = async (member: GuildMember) => {
 
     const top = rankers.slice(0, 10)
         .filter(r => topMembersMap.has(r.userId))
-        .map((r,i) => {
+        .map((r, i) => {
             const memberObj = topMembersMap.get(r.userId)!;
             const memberHelper = guildMemberHelperSync(memberObj);
             const place = medals[i] ?? `**${i + 1}**`;
@@ -86,7 +92,7 @@ export default new Command({
     },
     messageCommand: {
         style: 'flat',
-        aliases: [ 'topvoice', 'tvoice' ],
+        aliases: ['topvoice', 'tvoice']
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

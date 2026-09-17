@@ -1,5 +1,5 @@
+import { GuildMemberDailyQuest, GuildMemberDailyQuestType } from '@/database/entities/guild-member/daily-quest.entity';
 import { Channel, GuildMember } from 'discord.js'
-import { MemberDailyQuestModel } from '@/database/core/models'
 
 export async function handleMemberDailyQuestNotify({
     member,
@@ -9,16 +9,12 @@ export async function handleMemberDailyQuestNotify({
 }: {
     member?: GuildMember;
     channel?: Channel | null;
-    oldQuest: MemberDailyQuestModel,
-    newQuest: MemberDailyQuestModel
+    oldQuest: GuildMemberDailyQuest;
+    newQuest: GuildMemberDailyQuest;
 }) {
     if (oldQuest.isClaimed || !channel?.isSendable() || !member) return;
 
-    const questType = newQuest.voiceMinutesTarget ? 'voice' : 'streaming';
-    const questMinutesTarget = [`${questType}MinutesTarget`];
-    const questMinutesProgress = [`${questType}MinutesProgress`];
-
-    if (questMinutesProgress >= questMinutesTarget) {
-        await channel.send(`🎁 \`${member.user.username}\` **Quête ${questType ? 'vocal' : 'streamin'} quotidienne complétée !** La récompense est disponible :)`);
+    if (newQuest.progress >= newQuest.target) {
+        await channel.send(`🎁 \`${member.user.username}\` **Quête ${newQuest.type === GuildMemberDailyQuestType.CALL ? 'vocal' : 'streamin'} quotidienne complétée !** La récompense est disponible :)`);
     }
 }

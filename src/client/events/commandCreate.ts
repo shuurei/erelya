@@ -1,22 +1,14 @@
 import { Event } from '@/structures'
-import {
-    BaseMessageOptions,
-    ChatInputCommandInteraction,
-    Message,
-    Team
-} from 'discord.js'
+import { BaseMessageOptions, ChatInputCommandInteraction, Message, Team } from 'discord.js'
 
-import db from '@/database/db'
-import { guildModuleService } from '@/database/services'
-import {
-    GuildModuleKeys,
-    GuildModuleName,
-    PrismaUserFlags
-} from '@/database/utils'
+import { UserService } from '@/database/services/user.service'
+
+import { createNotifCard } from '@/ui/assets/cards/notifCard'
+import { EmbedUI } from '@/ui' 
 
 import { logger } from '@/utils'
-import { createNotifCard } from '@/ui/assets/cards/notifCard'
-import { EmbedUI } from '@/ui'
+import { GuildModuleName, GuildModuleService } from '@/database/services/guild-module.service'
+import { UserDatabaseFlags } from '@/utils/user-flags'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     try {
@@ -25,7 +17,7 @@ const replyBy = async (interaction: Message | ChatInputCommandInteraction, paylo
         } else if (interaction instanceof Message && interaction.channel.isSendable()) {
             return await interaction.reply(payload);
         }
-    } catch (ex) {
+    } catch (ex: any) {
         logger.error(ex);
     }
 }
@@ -70,11 +62,7 @@ export default new Event({
                 throw new Error('No guild or no user')
             };
 
-            const userDatabase = await db.user.findUnique({
-                where: {
-                    id: user.id
-                }
-            });
+            const userDatabase = await UserService.findById(user.id);
 
             if (!this.client.application?.owner) {
                 await this.client.application?.fetch();
@@ -86,29 +74,30 @@ export default new Event({
                 if (access.guild) {
                     if (access.guild.modules) {
                         const moduleNames = Object.keys(access.guild.modules) as GuildModuleName[];
-                        const areModulesEnabled = await guildModuleService.areEnabled(guild.id, moduleNames, 'every');
-                        if (!areModulesEnabled) {
-                            return await replyAuthorizationRefused(
-                                'Contexte invalide. Un ou plusieurs modules requis sont désactivés par le gérant du serveur.',
-                            );
+                        const modules = await GuildModuleService.findMany(guild.id, moduleNames);
+
+                        const allEnabled = moduleNames.every((name) => modules[name].isEnabled);
+                        if (!allEnabled) {
+                            return await replyAuthorizationRefused('Un ou plusieurs modules sont désactivés par le gérant du serveur.');
                         }
 
                         for (const moduleName of moduleNames) {
-                            const moduleFields = Object.keys(access.guild.modules[moduleName] as any) as GuildModuleKeys<typeof moduleName>[];
+                            const moduleConfig = access.guild.modules[moduleName];
+                            if (!moduleConfig) continue;
 
-                            if (moduleFields.length === 0) continue;
+                            const fields = Object.keys(moduleConfig) as (keyof typeof moduleConfig)[];
+                            if (fields.length < 1) continue;
 
-                            const areFieldsEnabled = await guildModuleService.areSettingFieldEnabled(
-                                guild.id,
-                                moduleName,
-                                moduleFields,
-                                'every'
-                            );
+                            const module = modules[moduleName];
+                            const allFieldsEnabled = fields.every((field) => {
+                                const required = moduleConfig[field];
+                                const actual = module?.[field as keyof typeof module];
 
-                            if (!areFieldsEnabled) {
-                                return await replyAuthorizationRefused(
-                                    `Contexte invalide. Une ou plusieurs options lié à un module requis sont désactivés.`,
-                                );
+                                return !required || actual === true;
+                            });
+
+                            if (!allFieldsEnabled) {
+                                return replyAuthorizationRefused('Une ou plusieurs options liées à un module requis sont désactivées.');
                             }
                         }
                     }
@@ -130,12 +119,8 @@ export default new Event({
                     }
 
                     if (userDatabase && !isDeveloper) {
-                        if (access.user?.isStaff && !userDatabase.flags.has(PrismaUserFlags.CLEANER)) {
-                            return await replyAuthorizationRefused(`Accès restreint. Probabilité de succès insuffisante.`);
-                        }
-
-                        if (access.user?.isBetaTester && !userDatabase.flags.has(PrismaUserFlags.BETA)) {
-                            return await replyAuthorizationRefused(`Accès restreint. Statut bêta requis.`);
+                        if (access.user?.isBetaTester && !userDatabase.flagsBitField.has(UserDatabaseFlags.TESTER)) {
+                            return await replyAuthorizationRefused(`Accès restreint. Statut tester requis.`);
                         }
                     }
 
@@ -162,7 +147,7 @@ export default new Event({
             ) {
                 return await command.onMessage(interaction, { args });
             }
-        } catch (err) {
+        } catch (err: any) {
             this.client.logger.error(err);
 
             if (this.client.hub && this.client.hub?.heartLogsChannel) {

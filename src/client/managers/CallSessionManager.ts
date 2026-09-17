@@ -1,6 +1,6 @@
 import { Locale, VoiceState } from 'discord.js'
 import { CustomClient } from '@/structures'
-import { memberService } from '@/database/services'
+import { GuildMemberService } from '@/database/services/guild-member.service';
 
 interface CallSessionFlags {
     isPrivate: boolean;
@@ -108,25 +108,25 @@ export class CallSessionManager {
 
         const { flags } = session;
         if (flags.isDeaf) {
-            await memberService.incrementCallDeafTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallDeafTime({ userId, guildId }, minutesElapsed);
         } else if (flags.isMuted) {
-            await memberService.incrementCallMutedTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallMutedTime({ userId, guildId }, minutesElapsed);
         } else {
-            await memberService.incrementCallActiveTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallActiveTime({ userId, guildId }, minutesElapsed);
         }
 
         if (session.flags.isPrivate) {
-            await memberService.incrementCallPrivateTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallPrivateTime({ userId, guildId }, minutesElapsed);
         } else {
-            await memberService.incrementCallPublicTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallPublicTime({ userId, guildId }, minutesElapsed);
         }
 
         if (session.flags.isStreaming) {
-            await memberService.incrementCallStreamingTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallStreamingTime({ userId, guildId }, minutesElapsed);
         }
 
         if (session.flags.hasCamera) {
-            await memberService.incrementCallCameraTime({ userId, guildId }, minutesElapsed);
+            await GuildMemberService.incrementCallCameraTime({ userId, guildId }, minutesElapsed);
         }
 
         session.timestamp = now;

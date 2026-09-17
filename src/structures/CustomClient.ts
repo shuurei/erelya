@@ -39,6 +39,7 @@ interface CustomClientSpamBufferData {
 }
 
 import pkg from '@pkg'
+import { startAllJobs } from '@/client/jobs'
 
 export class CustomClient extends Client {
     hub?: Guild & {
@@ -49,8 +50,6 @@ export class CustomClient extends Client {
     mainGuild!: Guild & {
         welcomeChannel: TextChannel;
     };
-
-    isDatabaseConnected: boolean;
 
     events: EventManager;
     commands: CommandManager;
@@ -104,8 +103,6 @@ export class CustomClient extends Client {
             },
         });
 
-        this.isDatabaseConnected = false;
-
         this.events = new EventManager(this);
         this.commands = new CommandManager(this);
         this.callSessions = new CallSessionManager(this);
@@ -121,7 +118,6 @@ export class CustomClient extends Client {
             "Bonjour le monde !",
             "existential.exe en cours d'exécution..",
             "J'❤ Radiohead",
-            "Neveress To Everness c'est génial 👀",
             "La prédiction du chaos.. Est plutôt juste ?",
             "Puis-je aimer ? Mhh",
             "Fonctionne à vide.. En quelque sorte ?",
@@ -224,7 +220,7 @@ export class CustomClient extends Client {
                 setInterval(() => this.randomReflexion(), randomNumber(1, 10) * 60 * 1000);
             }
 
-            this.emit('clientSetup', this);
+            await startAllJobs();
 
             return token;
         });

@@ -1,6 +1,6 @@
 import { Event } from '@/structures'
+import { GuildService } from '@/database/services/guild.service'
 
-import { guildService } from '@/database/services'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
@@ -16,7 +16,7 @@ export default new Event({
             || !newMessage.guild
         ) return;
 
-        const { messageEditedAuditChannelId } = await guildService.findById(newMessage.guild.id) ?? {};
+        const { messageEditedAuditChannelId } = await GuildService.findById(newMessage.guild.id) ?? {};
         if (!messageEditedAuditChannelId) return;
 
         const channel = newMessage.guild.channels.cache.get(messageEditedAuditChannelId);

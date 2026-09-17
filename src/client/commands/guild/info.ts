@@ -1,18 +1,9 @@
 import { Command } from '@/structures/Command'
-import {
-    ChannelType,
-    ComponentType,
-    GuildPremiumTier,
-    MessageFlags
-} from 'discord.js'
+import { ChannelType, ComponentType, GuildPremiumTier, MessageFlags } from 'discord.js'
 
 import { ContainerUI } from '@/ui/ContainerUI'
 
-import {
-    createSection,
-    createTextDisplay,
-    createThumbnail
-} from '@/ui/components/common'
+import { createSection, createTextDisplay, createThumbnail } from '@/ui/components/common'
 
 import { escapeAllMarkdown, formatCompactNumber, getDominantColor } from '@/utils'
 import { applicationEmojiHelper } from '@/helpers'

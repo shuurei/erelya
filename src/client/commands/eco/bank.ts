@@ -4,16 +4,15 @@ import { Command } from '@/structures/Command'
 import { ContainerUI } from '@/ui'
 import { createSection, createTextDisplay, createThumbnail } from '@/ui/components/common'
 
-import { memberService } from '@/database/services'
-
 import { getDominantColor, parseUserMention } from '@/utils'
 import { guildMemberHelper } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
 
 const buildPayload = async (member: GuildMember) => {
     const memberHelper = await guildMemberHelper(member, { fetchAll: true });
     const memberAvatarDominantColor = await getDominantColor(memberHelper.getAvatarURL({ forceStatic: true }));
 
-    const { guildCoins } = await memberService.findOrCreate({ guildId: member.guild.id, userId: member.id });
+    const { coins } = await GuildMemberService.findOrCreate({ guildId: member.guild.id, userId: member.id });
 
     return {
         flags: MessageFlags.IsComponentsV2,
@@ -26,7 +25,7 @@ const buildPayload = async (member: GuildMember) => {
                         createTextDisplay(' > *💡 Ici sont stockés toutes les pièces de serveur que vous avez accumulés*'),
                         createTextDisplay([
                             `### - :coin: **Pièce de serveur**`,
-                            `> \`${guildCoins.toLocaleString('en')}\``,
+                            `> \`${coins.toLocaleString('en')}\``,
                         ].join('\n'))
                     ]
                 })
@@ -55,7 +54,11 @@ export default new Command({
         aliases: ['b', 'bank', 'bal'],
     },
     access: {
-        guild: { modules: { eco: true } }
+        guild: {
+            modules: {
+                economy: { isEnabled: true }
+            }
+        }
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

@@ -1,9 +1,10 @@
+import { defaultEconomyModule } from '@/database/entities/guild-module';
+import { GuildMemberService } from '@/database/services/guild-member.service';
+import { GuildModuleService } from '@/database/services/guild-module.service';
 import { Command } from '@/structures/Command'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 import { createCooldown, formatTimeLeft } from '@/utils'
-import { guildModuleService, memberService } from '@/database/services'
-import { defaultEcoGuildModuleSettings } from '@/database/utils'
 
 interface HandleWorkContext {
     userId: string;
@@ -20,17 +21,12 @@ const handleWorkCommand = async ({
 }: HandleWorkContext) => {
     const memberKey = { userId, guildId }
 
-    const memberDatabase = await memberService.findOrCreate(memberKey);
-    const guildEcoModule = await guildModuleService.findById({
-        guildId,
-        moduleName: 'eco'
-    });
+    const memberDatabase = await GuildMemberService.findOrCreate(memberKey);
+    const guildEcoModule = await GuildModuleService.findByName(guildId, 'economy') ?? defaultEconomyModule;
 
-    const ecoSettings = guildEcoModule?.settings ?? defaultEcoGuildModuleSettings;
-
-    const COOLDOWN = ecoSettings.workCooldownMinutes * 60 * 1000; 
-    const MIN_REWARD = ecoSettings.workMinGain;
-    const MAX_REWARD = ecoSettings.workMaxGain;
+    const COOLDOWN = guildEcoModule.workCooldown * 60 * 1000;
+    const MIN_REWARD = guildEcoModule.workMinGain;
+    const MAX_REWARD = guildEcoModule.workMaxGain;
 
     const { isActive, expireTimestamp } = createCooldown(memberDatabase.lastWorkedAt, COOLDOWN);
 
@@ -41,8 +37,8 @@ const handleWorkCommand = async ({
                     color: 'red',
                     title: '⏳ Travail déjà effectué',
                     description: `Vous devez attendre encore ${formatTimeLeft(expireTimestamp)} avant de retravailler`,
-                }),
-            ],
+                })
+            ]
         });
     }
 
@@ -62,8 +58,8 @@ const handleWorkCommand = async ({
         phraseBonus = `✨ Aujourd'hui, vous avez un petit bonus de **${bonus} pièces** !`;
     }
 
-    await memberService.setLastWorkedAt(memberKey);
-    await memberService.addGuildCoins(memberKey, reward);
+    await GuildMemberService.setLastWorkedAt(memberKey);
+    await GuildMemberService.addCoins(memberKey, reward);
 
     const phrases = [
         `Bravo ! Vous avez travaillé dur aujourd'hui et gagné **${reward} pièces** !`,
@@ -99,9 +95,7 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                eco: {
-                    isWorkEnabled: true,
-                }
+                economy: { isWorkEnabled: true }
             }
         }
     },

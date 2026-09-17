@@ -6,8 +6,7 @@ import { EmbedUI, EmbedUIData } from '@/ui/EmbedUI'
 
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { formatCompactNumber, formatTimeLeft, getDominantColor, randomNumber, tzMap } from '@/utils'
-
-import { memberService } from '@/database/services'
+import { GuildMemberService } from '@/database/services/guild-member.service'
 
 const MIN_REWARD = 750;
 const MAX_REWARD = 1250;
@@ -74,7 +73,7 @@ const buildEmbed = async (member: GuildMember) => {
     const memberHelper = await guildMemberHelper(member, { fetchAll: true });
     const memberAvatarDominantColor = await getDominantColor(memberHelper.getAvatarURL({ forceStatic: true }));
 
-    let { dailyStreak, lastAttendedAt } = await memberService.findOrCreate(memberKey);
+    let { dailyStreak, lastAttendedAt } = await GuildMemberService.findOrCreate(memberKey);
 
     const lastInGuildTZ = lastAttendedAt ? DateTime.fromJSDate(lastAttendedAt, { zone: guildTZ }) : null;
     const nowInGuildTZ = DateTime.now().setZone(guildTZ);
@@ -104,8 +103,8 @@ const buildEmbed = async (member: GuildMember) => {
             : false;
 
         const data = isSameDayAsYesterday
-            ? await memberService.incrementDailyStreak(memberKey)
-            : await memberService.resetDailyStreak(memberKey);
+            ? await GuildMemberService.incrementDailyStreak(memberKey)
+            : await GuildMemberService.resetDailyStreak(memberKey);
 
         dailyStreak = data.dailyStreak;
 
@@ -117,8 +116,8 @@ const buildEmbed = async (member: GuildMember) => {
         const flameData = getFlameData(dailyStreak);
 
         await Promise.all([
-            memberService.setLastAttendedAt(memberKey),
-            memberService.addGuildCoins(memberKey, totalReward)
+            GuildMemberService.setLastAttendedAt(memberKey),
+            GuildMemberService.addCoins(memberKey, totalReward)
         ]);
 
         if (milestone) {
@@ -197,7 +196,11 @@ export default new Command({
         aliases: [ 'presence', 'p', 'daily' ]
     },
     access: {
-        guild: { modules: { eco: true } }
+        guild: {
+            modules: {
+                economy: { isEnabled: true }
+            }
+        }
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

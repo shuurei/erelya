@@ -15,30 +15,29 @@
 	],
 	"main": "build/index.js",
 	"scripts": {
+		"db": "docker compose up -d db",
 		"dev": "tsx watch src/index.ts",
 		"preview": "docker compose up preview",
 		"start": "docker compose up prod",
-		"build": "docker compose build prod",
-		"db:push": "npx prisma db push",
-		"db:generate": "npx prisma generate"
+		"build": "docker compose build prod"
 	},
 	"dependencies": {
 		"@napi-rs/canvas": "1.0.2",
-		"@prisma/adapter-mariadb": "^7.10.0",
-		"@prisma/client": "7.8.0",
 		"chroma-js": "^3.2.0",
 		"croner": "^10.0.1",
 		"discord.js": "14.27.0",
 		"dotenv": "^17.4.2",
 		"fast-glob": "^3.3.3",
 		"luxon": "^3.7.2",
-		"picocolors": "^1.1.1"
+		"pg": "^8.23.0",
+		"picocolors": "^1.1.1",
+		"reflect-metadata": "^0.2.2",
+		"typeorm": "^1.1.1"
 	},
 	"devDependencies": {
 		"@types/chroma-js": "^3.1.2",
 		"@types/luxon": "^3.7.5",
 		"@types/node": "^25.9.6",
-		"prisma": "7.8.0",
 		"tsc-alias": "^1.9.4",
 		"tsup": "^8.5.1",
 		"tsx": "^4.23.13",

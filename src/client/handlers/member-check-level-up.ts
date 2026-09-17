@@ -1,10 +1,11 @@
 import { Channel, GuildMember } from 'discord.js'
 
 import { handleMemberRoleRewardSync } from './member-role-reward-sync'
-import { guildModuleService, memberService } from '@/database/services'
 import { getDominantColor, levelToXp, xpToLevel } from '@/utils'
 import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
 import { guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { GuildModuleService } from '@/database/services/guild-module.service'
 
 const isAtMaxLevel = (maxLevel?: number, level?: number) => {
     return typeof maxLevel === 'number' && typeof level === 'number'
@@ -31,28 +32,28 @@ export async function handleMemberCheckLevelUp({
         guildLevelModule,
         guildEcoModule
     ] = await Promise.all([
-        memberService.findById({ guildId, userId }),
-        guildModuleService.findById({ guildId, moduleName: 'level' }),
-        guildModuleService.findById({ guildId, moduleName: 'eco' })
+        GuildMemberService.findById({ guildId, userId }),
+        GuildModuleService.findByName(guildId, 'level'),
+        GuildModuleService.findByName(guildId, 'economy')
     ]);
 
-    if (!guildLevelModule?.isActive || !guildLevelModule.settings) return
+    if (!guildLevelModule?.isEnabled) return
 
-    const currentLevel = memberDatabase?.activityLevel ?? 1;
-    const currentXp = memberDatabase?.activityXp ?? 0;
+    const currentLevel = memberDatabase?.level ?? 1;
+    const currentXp = memberDatabase?.xp ?? 0;
 
-    if (isAtMaxLevel(guildLevelModule.settings.maxLevel, currentLevel)) return
+    if (isAtMaxLevel(guildLevelModule.maxLevel, currentLevel)) return
 
     const nextXp = currentXp + xpGain;
     const newLevel = xpToLevel(nextXp);
 
-    const reachMaxLevel = isAtMaxLevel(guildLevelModule.settings.maxLevel, newLevel);
+    const reachMaxLevel = isAtMaxLevel(guildLevelModule.maxLevel, newLevel);
 
     if (reachMaxLevel) {
-        const xpMaxLevel = levelToXp(guildLevelModule.settings.maxLevel);
-        await memberService.setActivityXp({ userId, guildId }, xpMaxLevel);
+        const xpMaxLevel = levelToXp(guildLevelModule.maxLevel);
+        await GuildMemberService.setXp({ userId, guildId }, xpMaxLevel);
     } else {
-        await memberService.addActivityXp({ userId, guildId }, xpGain);
+        await GuildMemberService.addXp({ userId, guildId }, xpGain);
     }
 
     if (newLevel <= currentLevel) return
@@ -82,8 +83,8 @@ export async function handleMemberCheckLevelUp({
         );
     }
 
-    if (guildEcoModule?.isActive && rewards?.totalGuildPoints > 0) {
-        await memberService.addGuildCoins({ guildId, userId }, rewards.totalGuildPoints);
+    if (guildEcoModule?.isEnabled && rewards?.totalGuildPoints > 0) {
+        await GuildMemberService.addCoins({ guildId, userId }, rewards.totalGuildPoints);
 
         messageLines.push(
             `> 💰 Gain de pièces : **${rewards.totalGuildPoints.toLocaleString('en')}**`

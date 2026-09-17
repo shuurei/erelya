@@ -1,27 +1,15 @@
 import { Command } from '@/structures'
-import {
-    ApplicationCommandOptionType,
-    GuildFeature,
-    GuildMember
-} from 'discord.js'
-
-import {
-    guildModuleService,
-    memberService,
-    userService
-} from '@/database/services'
+import { ApplicationCommandOptionType, GuildFeature, GuildMember } from 'discord.js'
 
 import { createProgressBar } from '@/ui/components'
 import { EmbedUI } from '@/ui'
 
 import { guildMemberHelper } from '@/helpers'
-import {
-    getDominantColor,
-    parseUserMention,
-    timeElapsedFactor,
-    xpToNextLevel
-} from '@/utils'
+import { getDominantColor, parseUserMention, timeElapsedFactor, xpToNextLevel } from '@/utils'
 import { createBoostLine } from '@/ui/components/createBoostLine'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { UserService } from '@/database/services/user.service'
+import { GuildModuleService } from '@/database/services/guild-module.service'
 
 const buildEmbed = async (member: GuildMember) => {
     const memberHelper = await guildMemberHelper(member);
@@ -47,27 +35,18 @@ const buildEmbed = async (member: GuildMember) => {
         guildLevelModule
     ] = await Promise.all([
         getDominantColor(memberAvatar),
-        memberService.findById({ userId, guildId }),
-        memberService.getActivityXpRank({ userId, guildId }),
-        userService.findById(userId),
-        guildModuleService.findOrCreate({
-            guildId,
-            moduleName: 'level'
-        })
+        GuildMemberService.findById({ userId, guildId }),
+        GuildMemberService.getActivityXpRank({ userId, guildId }),
+        UserService.findById(userId),
+        GuildModuleService.findOrCreate(guildId, 'level')
     ]);
 
-    const activityXp = memberData?.activityXp ?? 0;
+    const xp = memberData?.xp ?? 0;
 
-    const tagSupporterFactor = guildLevelModule.settings.tagSupporterFactor;
-    const boosterFactor = guildLevelModule.settings.boosterFactor;
+    const tagSupporterFactor = guildLevelModule.tagSupporterFactor;
+    const boosterFactor = guildLevelModule.guildBoosterFactor;
 
-    const {
-        currentXp,
-        currentLevel,
-        nextLevel,
-        xpProgress,
-        xpForLevel
-    } = xpToNextLevel(activityXp)
+    const { currentXp, currentLevel, nextLevel, xpProgress, xpForLevel } = xpToNextLevel(xp)
 
     const guildBoostPercent = (timeElapsedFactor(member?.premiumSince, 7) * boosterFactor) * 100
     const tagBoostPercent = (timeElapsedFactor(user?.tagAssignedAt, 14) * tagSupporterFactor) * 100
@@ -90,7 +69,7 @@ const buildEmbed = async (member: GuildMember) => {
         },
         {
             name: 'Rang',
-            value: activityXp > 0
+            value: xp > 0 && leaderboard
                 ? `**${leaderboard.rank.toLocaleString('en')}** / **${leaderboard.total.toLocaleString('en')}**`
                 : 'Non Classé',
             inline: true
@@ -143,7 +122,7 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                level: true
+                level: { isEnabled: true }
             }
         }
     },

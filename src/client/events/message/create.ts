@@ -1,26 +1,16 @@
 import { Event, MessageCommandStyle } from '@/structures'
 
-import {
-    userService,
-    memberService,
-    guildModuleService,
-    channelBlacklistService,
-    guildService,
-    memberDailyQuestService,
-} from '@/database/services'
-
-import {
-    createCooldown,
-    randomNumber,
-    timeElapsedFactor,
-} from '@/utils'
+import { createCooldown, randomNumber, timeElapsedFactor } from '@/utils'
 
 import { createActionRow, createButton } from '@/ui/components/common'
 
 import { handleMemberCheckLevelUp } from '@/client/handlers/member-check-level-up'
-import { handleMemberDailyQuestSync } from '@/client/handlers/member-daily-quest-sync'
-import { handleMemberDailyQuestNotify } from '@/client/handlers/member-daily-quest-notify'
 import { createNotifCard } from '@/ui/assets/cards/notifCard'
+import { UserService } from '@/database/services/user.service'
+import { GuildService } from '@/database/services/guild.service'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { ChannelBlacklistService } from '@/database/services/channel-blacklist.service'
+import { GuildModuleService } from '@/database/services/guild-module.service'
 
 /** @deprecated */
 const channelsAutomaticThread = [
@@ -40,7 +30,7 @@ export default new Event({
         const guildId = guild.id;
         const channelId = message.channel.id;
 
-        const channelScopeBlacklist = await channelBlacklistService.findMany({ guildId, channelId });
+        const channelScopeBlacklist = await ChannelBlacklistService.findMany({ guildId, channelId });
 
         const now = Date.now();
         const content = message.content.trim();
@@ -127,7 +117,7 @@ export default new Event({
         };
 
         if (!(messageStartsWithPrefix || channelScopeBlacklist.MESSAGE)) {
-            await memberService.incrementMessageCount({ userId, guildId });
+            await GuildMemberService.incrementMessageCount({ userId, guildId });
         }
 
         const [
@@ -138,31 +128,26 @@ export default new Event({
             guildEventModule,
             guildQuestModule
         ] = await Promise.all([
-            userService.findById(userId),
-            guildService.findById(guildId),
-            guildModuleService.findById({ guildId, moduleName: 'eco' }),
-            guildModuleService.findById({ guildId, moduleName: 'level' }),
-            guildModuleService.findById({ guildId, moduleName: 'event' }),
-            guildModuleService.findById({ guildId, moduleName: 'quest' })
+            UserService.findById(userId),
+            GuildService.findById(guildId),
+            GuildModuleService.findByName(guildId, 'economy'),
+            GuildModuleService.findByName(guildId, 'level'),
+            GuildModuleService.findByName(guildId, 'event'),
+            GuildModuleService.findByName(guildId, 'quest')
         ]);
 
-        if (guildEventModule?.isActive && guildEventModule.settings) {
-            const { settings } = guildEventModule;
-
+        if (guildEventModule?.isEnabled) {
             const { isActive } = createCooldown(
                 guildDatabase?.lastEventAt,
-                guildEventModule.settings.randomEventCooldownMinutes * 60 * 1000
+                guildEventModule.randomEventCooldown * 60 * 1000
             );
 
-            if (!isActive && (Math.random() < settings.randomEventChance)) {
+            if (!isActive && (Math.random() < guildEventModule.randomEventChance)) {
                 const chance = Math.random();
 
-                if (
-                    settings.isCoinEventEnabled
-                    && (chance < settings.coinsChance)
-                ) {
-                    await guildService.setLastEventAt(guild.id);
-                    const randomCoins = randomNumber(settings.coinsMinGain, settings.coinsMaxGain);
+                if (guildEventModule.isGuildCoinEventEnabled && (chance < guildEventModule.guildCoinsChance)) {
+                    await GuildService.setLastEventAt(guild.id);
+                    const randomCoins = randomNumber(guildEventModule.guildCoinsMinGain, guildEventModule.guildCoinsMaxGain);
 
                     const buttons = [
                         createButton({
@@ -219,7 +204,7 @@ export default new Event({
                             }
                         }
 
-                        await memberService.addGuildCoins({ guildId, userId: i.user.id }, coinsGained);
+                        await GuildMemberService.addCoins({ guildId, userId: i.user.id }, coinsGained);
 
                         await i.update({
                             files: [
@@ -234,17 +219,14 @@ export default new Event({
                             components: []
                         });
                     } catch {
-                        await guildService.setLastEventAt(guild.id, null);
+                        await GuildService.setLastEventAt(guild.id, null);
                         if (msg.deletable) {
                             await msg.delete();
                         }
                     }
-                } else if (
-                    settings.isXpEventEnabled
-                    && (chance < settings.xpChance)
-                ) {
-                    await guildService.setLastEventAt(guild.id);
-                    const randomXp = randomNumber(settings.xpMinGain, settings.xpMaxGain);
+                } else if (guildEventModule.isActivityXpEventEnabled && (chance < guildEventModule.activityXpChance)) {
+                    await GuildService.setLastEventAt(guild.id);
+                    const randomXp = randomNumber(guildEventModule.activityXpMinGain, guildEventModule.activityXpMaxGain);
 
                     const buttons = [
                         createButton({
@@ -320,7 +302,7 @@ export default new Event({
                             components: []
                         });
                     } catch {
-                        await guildService.setLastEventAt(guild.id, null);
+                        await GuildService.setLastEventAt(guild.id, null);
                         if (msg.deletable) {
                             await msg.delete();
                         }
@@ -332,39 +314,33 @@ export default new Event({
         const guildBoostElapsedProgress = timeElapsedFactor(message?.member?.premiumSince, 7);
         const tagBoostElapsedProgress = timeElapsedFactor(userDatabase?.tagAssignedAt, 14);
 
-        if (guildEcoModule?.isActive && !channelScopeBlacklist.ECONOMY) {
-            const { settings } = guildEcoModule;
+        if (guildEcoModule?.isEnabled && !channelScopeBlacklist.ECONOMY && guildEcoModule?.isGuildCoinsFromMessageEnabled) {
+            if (Math.random() < guildEcoModule.messageChance) {
+                const maxGain = guildEcoModule.messageMaxGain;
+                const minGain = guildEcoModule.messageMinGain;
 
-            if (settings?.guildPointsFromMessageEnabled) {
-                if (Math.random() < settings.messageChance) {
-                    const maxGain = settings.messageMaxGain;
-                    const minGain = settings.messageMinGain;
+                // Penalty
+                const spamFactor = factor(userSpamData?.messageCount, (userSpamData?.messageCount ?? 0) / 5);
 
-                    // Penalty
-                    const spamFactor = factor(userSpamData?.messageCount, (userSpamData?.messageCount ?? 0) / 5);
+                // Bonus
+                const guildBoostFactor = factor(guildEcoModule.guildBoosterFactor, guildBoostElapsedProgress * guildEcoModule.guildBoosterFactor);
+                const tagBoostFactor = factor(guildEcoModule.tagSupporterFactor, tagBoostElapsedProgress * guildEcoModule.tagSupporterFactor);
 
-                    // Bonus
-                    const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
-                    const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
+                const bonusFactor = tagBoostFactor + guildBoostFactor;
 
-                    const bonusFactor = tagBoostFactor + guildBoostFactor;
+                const randomCoins = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - spamFactor));
 
-                    const randomCoins = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - spamFactor));
-
-                    if (randomCoins > 0) {
-                        await memberService.addGuildCoins({
-                            userId,
-                            guildId,
-                        }, randomCoins);
-                    }
+                if (randomCoins > 0) {
+                    await GuildMemberService.addCoins({
+                        userId,
+                        guildId,
+                    }, randomCoins);
                 }
             }
         }
 
-        if (guildLevelModule?.isActive && !channelScopeBlacklist.LEVEL) {
-            const { settings } = guildLevelModule;
-
-            if (settings?.isXpFromMessageEnabled && Math.random() < settings.messageChance) {
+        if (guildLevelModule?.isEnabled && !channelScopeBlacklist.LEVEL && guildLevelModule.isXpFromMessageEnabled) {
+            if (Math.random() < guildLevelModule.messageChance) {
                 const maxGain = 125;
                 const minGain = 75;
 
@@ -372,8 +348,8 @@ export default new Event({
                 const spamFactor = factor(userSpamData?.messageCount, (userSpamData?.messageCount ?? 0) / 5);
 
                 // Bonus
-                const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
-                const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
+                const guildBoostFactor = factor(guildLevelModule.guildBoosterFactor, guildBoostElapsedProgress * guildLevelModule.guildBoosterFactor);
+                const tagBoostFactor = factor(guildLevelModule.tagSupporterFactor, tagBoostElapsedProgress * guildLevelModule.tagSupporterFactor);
 
                 const bonusFactor = tagBoostFactor + guildBoostFactor;
 

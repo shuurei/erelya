@@ -10,6 +10,9 @@
         "skipLibCheck": true,
         "strictNullChecks": true,
         "resolveJsonModule": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "strictPropertyInitialization": false,
         "allowJs": true,
         "outDir": "build",
         "paths": {

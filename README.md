@@ -27,7 +27,6 @@
 * 💼 `work` command with random drops and bonuses
 * 📸 Auto-thread creation channels
 * ⚙️ Slash commands with advanced permission handling
-* 🔒 Blacklist system with per-server overrides
 
 ## ⚙️ Prerequisites
 
@@ -98,7 +97,6 @@ src
 Default prefix: **`vdev!`**
 
 ### Example:
-* `vdev!authority check <user>` → Check if a user is blacklisted
 * `v!work` or `/eco work` → Run an activity to earn rewards
 
 ## 🤝 Contributing

@@ -1,10 +1,9 @@
 import { GuildMember, MessageFlags } from 'discord.js'
 import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services'
-
 import { createNotifCard } from '@/ui/assets/cards/notifCard'
 import { createMediaGallery } from '@/ui/components/common'
+import { GuildMemberService } from '@/database/services/guild-member.service';
 
 const MIN_BET = 100;
 const MAX_BET = 100_000;
@@ -14,10 +13,10 @@ const handleCommand = async ({ amount, guildId, member }: {
     guildId: string;
     member: GuildMember;
 }) => {
-    const { guildCoins } = await memberService.findById({ guildId, userId: member.id }) ?? { guildCoins: 0 };
+    const { coins } = await GuildMemberService.findById({ guildId, userId: member.id }) ?? { coins: 0 };
 
     if (typeof amount === 'string' && amount === 'max') {
-        amount = Math.min(guildCoins, MAX_BET);
+        amount = Math.min(coins, MAX_BET);
     }
 
     amount = +amount;
@@ -58,7 +57,7 @@ const handleCommand = async ({ amount, guildId, member }: {
         ];
     }
 
-    if (guildCoins < amount) {
+    if (coins < amount) {
         return [
             {
                 attachment: await createNotifCard({
@@ -72,7 +71,7 @@ const handleCommand = async ({ amount, guildId, member }: {
 
     const win = Math.random() < 0.5;
     if (win) {
-        await memberService.addGuildCoins({ guildId, userId: member.id }, amount);
+        await GuildMemberService.addCoins({ guildId, userId: member.id }, amount);
 
         return [
             {
@@ -84,14 +83,14 @@ const handleCommand = async ({ amount, guildId, member }: {
             },
             {
                 attachment: await createNotifCard({
-                    text: `[Nouveau solde : ${(guildCoins + amount).toLocaleString('en')} pièces.]`,
+                    text: `[Nouveau solde : ${(coins + amount).toLocaleString('en')} pièces.]`,
                 }),
                 name: 'newBalance.png'
             }
         ];
     }
 
-    await memberService.removeGuildCoins({ guildId, userId: member.id }, amount);
+    await GuildMemberService.removeCoins({ guildId, userId: member.id }, amount);
 
     return [
         {
@@ -103,7 +102,7 @@ const handleCommand = async ({ amount, guildId, member }: {
         },
         {
             attachment: await createNotifCard({
-                text: `[Nouveau solde : ${(guildCoins - amount).toLocaleString('en')} pièces.]`,
+                text: `[Nouveau solde : ${(coins - amount).toLocaleString('en')} pièces.]`,
             }),
             name: 'newBalance.png'
         }
@@ -129,9 +128,7 @@ export default new Command({
     messageCommand: { style: 'flat' },
     access: {
         guild: {
-            modules: {
-                eco: { isGamblingEnabled: true }
-            }
+            modules: { economy: { isGamblingEnabled: true } }
         }
     },
     async onInteraction(interaction) {

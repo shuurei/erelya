@@ -1,11 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-    entry: [
-        'src/**/**.ts',
-        '!src/database/core/**',
-        '!src/**/test.*'
-    ],
+    entry: [ 'src/**/**.ts' ],
     outDir: 'build',
     format: ['esm'],
     target: 'esnext',
@@ -14,8 +10,6 @@ export default defineConfig({
     clean: true,
     external: [
         '@napi-rs/canvas',
-        '@prisma/client',
-        'prisma',
         'discord.js',
     ],
     define: {

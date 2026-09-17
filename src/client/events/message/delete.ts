@@ -1,6 +1,6 @@
+import { GuildService } from '@/database/services/guild.service'
 import { Event } from '@/structures'
 
-import { guildService } from '@/database/services'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
@@ -8,7 +8,7 @@ export default new Event({
     async run({ events: [message] }) {
         if (!message.guild || message.author?.bot || !message.content || message.channel.isDMBased()) return;
 
-        const { messageDeletedAuditChannelId } = await guildService.findById(message.guild.id) ?? {};
+        const { messageDeletedAuditChannelId } = await GuildService.findById(message.guild.id) ?? {};
         if (!messageDeletedAuditChannelId) return;
 
         const channel = message.guild.channels.cache.get(messageDeletedAuditChannelId);

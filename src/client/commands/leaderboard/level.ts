@@ -1,22 +1,24 @@
 import { Command } from '@/structures/Command'
 import { GuildMember } from 'discord.js'
 
-import db from '@/database/db'
-
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
 import { guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { MoreThan } from 'typeorm'
 
 const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id;
     const guild = member.guild;
 
-    const rankers = (await db.member.findMany({
-        where: { guildId: guild.id, activityXp: { gt: 0 } }
-    })).sort((a, b) => b.activityXp - a.activityXp);
+    const rankers = (await GuildMemberService.repo.find({
+        where: { guildId: guild.id, xp: MoreThan(0) }
+    })).sort((a, b) => b.xp - a.xp);
 
-    if (!rankers.length) return EmbedUI.createMessage('Aucune donnée', { color: 'orange' });
+    if (!rankers.length) {
+        return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
+    };
 
     const topUserIds = rankers.slice(0, 10).map(r => r.userId);
     const topMembersMap = new Map(
@@ -38,13 +40,13 @@ const buildEmbed = async (member: GuildMember) => {
 
             return [
                 `- ${place} ${isAuthor ? `**\`${name}\`**` : `\`${name}\``}`,
-                `**↳** Nv. **${r.activityLevel}**`,
-                `**↳** **${r.activityXp.toLocaleString('en')}** XP`
+                `**↳** Nv. **${r.level}**`,
+                `**↳** **${r.xp.toLocaleString('en')}** XP`
             ].join('\n');
         }).join('\n');
 
     const leaderboardIndex = rankers.findIndex(r => r.userId === userId);
-    const totalLevels = rankers.reduce((sum, r) => sum + r.activityLevel, 0);
+    const totalLevels = rankers.reduce((sum, r) => sum + r.level, 0);
 
     const guildIcon = guild.iconURL();
     const guildIconDominantColor = guildIcon ? await getDominantColor(guildIcon) : undefined;
@@ -61,8 +63,8 @@ const buildEmbed = async (member: GuildMember) => {
             top,
             leaderboardIndex >= 10 ? [
                 `- **..${leaderboardIndex + 1} \`${memberHelper.getName()}**\``,
-                `**↳** Nv. **${rankers[leaderboardIndex].activityLevel}**`,
-                `**↳** **${rankers[leaderboardIndex].activityXp.toLocaleString('en')}** XP`
+                `**↳** Nv. **${rankers[leaderboardIndex].level}**`,
+                `**↳** **${rankers[leaderboardIndex].xp.toLocaleString('en')}** XP`
             ].join('\n') : ''
         ].join('\n'),
         timestamp: Date.now()
@@ -80,17 +82,13 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                level: true
+                level: { isEnabled: true }
             }
         }
     },
     messageCommand: {
         style: 'flat',
-        aliases: [
-            'toplevel',
-            'tlevel',
-            'tlvl'
-        ],
+        aliases: [ 'toplevel', 'tlevel', 'tlvl' ]
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

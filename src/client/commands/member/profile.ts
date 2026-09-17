@@ -1,24 +1,14 @@
 import { Command } from '@/structures'
-import {
-    ApplicationCommandOptionType,
-    GuildMember,
-    MessageFlags
-} from 'discord.js'
+import { ApplicationCommandOptionType, GuildMember, MessageFlags } from 'discord.js'
 
-import { userService } from '@/database/services'
-import { PrismaUserFlags } from '@/database/utils'
+import { UserService } from '@/database/services/user.service'
 
+import { createMediaGallery, createSection, createSeparator, createTextDisplay, createThumbnail } from '@/ui/components/common'
 import { ContainerUI } from '@/ui'
-import {
-    createMediaGallery,
-    createSection,
-    createSeparator,
-    createTextDisplay,
-    createThumbnail
-} from '@/ui/components/common'
 
 import { guildMemberHelper } from '@/helpers'
 import { getDominantColor, parseUserMention } from '@/utils'
+import { UserDatabaseFlags } from '@/utils/user-flags'
 
 const toDiscordTimestamp = (date?: number | Date | null) => {
     return date ? Math.floor(new Date(date).getTime() / 1000) : null;
@@ -30,12 +20,9 @@ const buildContainer = async (member: GuildMember) => {
     const avatar = helper.getAvatarURL({ forceStatic: true });
     const banner = helper.getBannerURL({ size: 1024 });
 
-    const [
-        dominantColor,
-        userDatabase
-    ] = await Promise.all([
+    const [ dominantColor, userDatabase ] = await Promise.all([
         getDominantColor(avatar),
-        member.user.bot ? null : userService.findById(member.id)
+        member.user.bot ? null : UserService.findById(member.id)
     ]);
 
     const createdAt = toDiscordTimestamp(member.user.createdTimestamp);
@@ -95,34 +82,21 @@ const buildContainer = async (member: GuildMember) => {
         })
     );
 
-    if (
-        member.user.bot ||
-        userDatabase?.flags?.any([
-            PrismaUserFlags.CLEANER,
-            PrismaUserFlags.BETA
-        ])
-    ) {
+    if (member.user.bot || userDatabase?.flagsBitField?.any([ UserDatabaseFlags.TESTER ])) {
         components.push(createSeparator());
 
         if (member.user.bot) {
             components.push(
                 createTextDisplay('-# *Cet utilisateur est un robot*')
             );
-        } else if (userDatabase?.flags.has(PrismaUserFlags.CLEANER)) {
-            components.push(
-                createTextDisplay('-# *Cet utilisateur est un nettoyeur*')
-            );
-        } else if (userDatabase?.flags.has(PrismaUserFlags.BETA)) {
+        } else if (userDatabase!.flagsBitField.has(UserDatabaseFlags.TESTER)) {
             components.push(
                 createTextDisplay('-# *Cet utilisateur est bêta-testeur du bot*')
             );
         }
     }
 
-    return ContainerUI.create({
-        color: dominantColor,
-        components
-    });
+    return ContainerUI.create({ color: dominantColor, components });
 };
 
 export default new Command({

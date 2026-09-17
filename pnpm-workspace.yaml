@@ -1,7 +1,2 @@
 allowBuilds:
-  '@prisma/engines': true
-  better-sqlite3: set this to true or false
-  esbuild: true
-  prisma: true
-ignoredBuiltDependencies:
-  - prisma
+  esbuild: set this to true or false

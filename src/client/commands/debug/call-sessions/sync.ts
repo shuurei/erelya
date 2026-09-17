@@ -3,9 +3,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Command({
     access: {
-        user: {
-            isDeveloper: true
-        }
+        user: { isDeveloper: true }
     },
     messageCommand: {
         style: 'slashCommand'

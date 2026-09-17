@@ -8,12 +8,11 @@ import {
     MessageReplyOptions
 } from 'discord.js'
 
-import db from '@/database/db'
-import { memberService } from '@/database/services/member'
-
 import { createNotifCard } from '@/ui/assets/cards/notifCard'
 import { createActionRow, createButton, createMediaGallery } from '@/ui/components/common'
 import { parseUserMention } from '@/utils'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { db } from '@/database/db'
 
 const handleCommand = async ({
     guildId,
@@ -72,14 +71,14 @@ const handleCommand = async ({
         });
     }
 
-    const { guildCoins } = await memberService.findById({
+    const { coins } = await GuildMemberService.findById({
         guildId,
         userId: fromUserId
-    }) ?? { guildCoins: 0 };
+    }) ?? { coins: 0 };
 
     if (typeof amount === 'string') {
         if (amount === 'all') {
-            amount = Math.max(guildCoins, 0);
+            amount = Math.max(coins, 0);
         } else {
             amount = parseInt(amount);
         }
@@ -99,7 +98,7 @@ const handleCommand = async ({
         });
     }
 
-    if (guildCoins < amount) {
+    if (coins < amount) {
         return await reply({
             files: [
                 {
@@ -155,13 +154,13 @@ const handleCommand = async ({
             });
         }
 
-        await db.$transaction(async (tx) => {
-            const ctx = Object.create(memberService, {
-                model: { value: tx.member }
+        await db.transaction(async (manager) => {
+            const ctx = Object.create(GuildMemberService, {
+                manager: { value: manager }
             });
 
-            await memberService.removeGuildCoins.call(ctx, { guildId, userId: fromUserId }, amount);
-            await memberService.addGuildCoins.call(ctx, { guildId, userId: toUserId }, amount);
+            await GuildMemberService.removeCoins.call(ctx, { guildId, userId: fromUserId }, amount);
+            await GuildMemberService.addCoins.call(ctx, { guildId, userId: toUserId }, amount);
         });
 
         const files = [
@@ -174,7 +173,7 @@ const handleCommand = async ({
             },
             {
                 attachment: await createNotifCard({
-                    text: `[Nouveau solde : ${(guildCoins - amount).toLocaleString('en')}.]`,
+                    text: `[Nouveau solde : ${(coins - amount).toLocaleString('en')}.]`,
                 }),
                 name: 'info.png'
             }
@@ -224,7 +223,7 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                eco: true
+                economy: { isEnabled: true }
             }
         }
     },
