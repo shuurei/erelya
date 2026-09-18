@@ -3,12 +3,13 @@ import './helpers/extends/String'
 import './helpers/extends/Math'
 import 'reflect-metadata'
 
+import pkg from '@pkg'
+
 const env = process.env.ENV;
 process.title = pkg.name.toUpperCase();
 
-import pkg from '@pkg'
 import { version as djsVersion } from 'discord.js'
-import { version as typeormVersion } from 'typeorm/package.json'
+import typeormPkg from 'typeorm/package.json' with { type: 'json' }
 
 import logger from './utils/logger'
 import client from './client/instance'
@@ -17,7 +18,7 @@ import { GlobalFonts } from '@napi-rs/canvas'
 
 import path from 'path'
 import os from 'os'
-import { db } from './database/db';
+import { db } from './database/db'
 
 GlobalFonts.registerFromPath(path.join(
     process.cwd(),
@@ -59,7 +60,7 @@ logger.list([
     },
     {
         label: 'Typeorm',
-        value: `v${typeormVersion}`
+        value: `v${typeormPkg.version}`
     }
 ]);
 logger.header(({ purpleBright }) => purpleBright('✦ OPERATING SYSTEM ✦'));
