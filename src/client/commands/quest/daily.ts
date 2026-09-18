@@ -134,13 +134,16 @@ export default new Command({
         });
 
         collector.on('collect', async (i) => {
-            questDatabase = await GuildMemberDailyQuestService.findOrCreate(memberKey);
+            let questDatabase = await GuildMemberDailyQuestService.findById(memberKey);
+            if (!questDatabase) {
+                return i.reply('Il semblerait que la quête est déjà été recup ?');
+            }
 
-            if (questDatabase?.isClaimed) {
+            if (questDatabase.isClaimed) {
                 return await interaction.deleteReply();
             }
 
-            questDatabase = await GuildMemberDailyQuestService.updateOrCreate(memberKey, { isClaimed: true });
+            questDatabase = await GuildMemberDailyQuestService.update(memberKey, { isClaimed: true });
 
             if (guildEcoModule?.isEnabled) {
                 await GuildMemberService.addCoins(memberKey, guildCoinsReward);
