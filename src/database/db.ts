@@ -11,5 +11,5 @@ export const db = new DataSource({
     database: DATABASE_NAME,
     password: DATABASE_PASSWORD,
     synchronize: ENV === 'DEV',
-    entities: [path.join(import.meta.dirname, 'entities/**/*.{ts,js}')],
+    entities: [path.join(import.meta.dirname, 'database/entities/**/*.entity.{js,ts}')]
 });
