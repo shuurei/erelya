@@ -8,7 +8,6 @@ import { GuildMemberDailyQuestService } from '@/database/services/guild-member-d
 
 export async function handleMemberDailyQuestSync(memberKey: { userId: string; guildId: string }, guildLocale: Locale) {
     const guildTZ = tzMap[guildLocale] || 'UTC';
-
     let quest = await GuildMemberDailyQuestService.findById(memberKey);
 
     const now = DateTime.now().setZone(guildTZ);
