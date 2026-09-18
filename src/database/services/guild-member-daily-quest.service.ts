@@ -36,6 +36,12 @@ export class GuildMemberDailyQuestService {
         return await this.repo.save(quest);
     }
 
+    static async update(where: MemberDailyQuestWhere, data: Partial<Omit<GuildMemberDailyQuest, 'userId' | 'guildId'>> = {}) {
+        await this.repo.update(this._buildWhere(where), data);
+
+        return await this.findById(where);
+    }
+
     static async findOrCreate(where: MemberDailyQuestWhere, data: Partial<Omit<GuildMemberDailyQuest, 'userId' | 'guildId'>> = {}) {
         await this.repo.upsert({
             ...where,

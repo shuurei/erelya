@@ -122,16 +122,18 @@ new Cron('* * * * *', async () => {
 
                 if (!quest.isClaimed && (quest.type === GuildMemberDailyQuestType.CALL || session.flags.isStreaming)) {
                     if (quest.progress < quest.target) {
-                        const newQuest = await GuildMemberDailyQuestService.updateOrCreate({ userId, guildId }, {
+                        const newQuest = await GuildMemberDailyQuestService.update({ userId, guildId }, {
                             progress: quest.progress + 1
                         });
 
-                        await handleMemberDailyQuestNotify({
-                            member: guild.members.cache.get(userId),
-                            channel: guild.channels.cache.get(session.channelId),
-                            oldQuest: quest,
-                            newQuest
-                        });
+                        if (newQuest) {
+                            await handleMemberDailyQuestNotify({
+                                member: guild.members.cache.get(userId),
+                                channel: guild.channels.cache.get(session.channelId),
+                                oldQuest: quest,
+                                newQuest
+                            });
+                        }
                     }
                 }
             }
