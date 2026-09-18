@@ -1,31 +1,29 @@
 import { Command } from '@/structures/Command'
 import { GuildMember } from 'discord.js'
 
-import db from '@/database/db'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { MoreThan } from 'typeorm'
 
 const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id
     const guild = member.guild
     const guildId = guild.id
 
-    const members = await db.member.findMany({
-        where: {
-            guildId,
-            OR: [{ guildCoins: { gt: 0 } }]
-        }
+    const rankers = await GuildMemberService.repo.find({
+        where: { guildId, coins: MoreThan(0) }
     });
 
-    if (!members.length) {
+    if (!rankers.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
     }
 
-    const ranked = members
-        .map(m => ({ ...m, totalCoins: (m.guildCoins ?? 0) }))
-        .filter(m => m.totalCoins > 0)
+    const ranked = rankers
+        .map((m) => ({ ...m, totalCoins: (m.coins ?? 0) }))
+        .filter((m) => m.totalCoins > 0)
         .sort((a, b) => b.totalCoins - a.totalCoins);
 
     if (!ranked.length) {
@@ -82,7 +80,7 @@ const buildEmbed = async (member: GuildMember) => {
                 : ''
         ].join('\n'),
         timestamp: Date.now()
-    })
+    });
 }
 
 export default new Command({
@@ -94,11 +92,15 @@ export default new Command({
         fr: '🏆 Affiche le classement des membres les plus riches du serveur'
     },
     access: {
-        guild: { modules: { eco: true } }
+        guild: {
+            modules: {
+                economy: { isEnabled: true }
+            }
+        }
     },
     messageCommand: {
         style: 'flat',
-        aliases: ['topcoins', 'tcoins'],
+        aliases: ['topcoins', 'tcoins']
     },
     async onInteraction(interaction) {
         await interaction.deferReply()

@@ -1,20 +1,20 @@
 import { Command } from '@/structures/Command'
 import { GuildMember } from 'discord.js'
 
-import db from '@/database/db'
-
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { MoreThan } from 'typeorm'
 
 const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id;
     const guild = member.guild;
 
-    const rankers = (await db.member.findMany({
-        where: { guildId: guild.id, messageCount: { gt: 0 } }
-    })).sort((a,b) => b.messageCount - a.messageCount);
+    const rankers = (await GuildMemberService.repo.find({
+        where: { guildId: guild.id, messageCount: MoreThan(0) }
+    })).sort((a, b) => b.messageCount - a.messageCount);
 
     if (!rankers.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
@@ -74,7 +74,7 @@ export default new Command({
     },
     messageCommand: {
         style: 'flat',
-        aliases: [ 'ttext', 'toptext' ],
+        aliases: [ 'ttext', 'toptext' ]
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

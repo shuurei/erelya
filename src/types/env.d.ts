@@ -12,13 +12,16 @@ declare global {
             TOKEN: string;
             // HUB
             HUB_GUILD_ID?: string;
-            HUB_TICKET_CHANNEL_ID?: string;
             HUB_HEART_LOGS_CHANNEL_ID?: string;
             // DISCORD
             CLIENT_ID: string;
             CLIENT_TOKEN?: string;
             // DATABASE
-            DATABASE_URL: string;
+            DATABASE_HOST: string;
+            DATABASE_PORT: number;
+            DATABASE_USER: string;
+            DATABASE_PASSWORD: string;
+            DATABASE_NAME: string;
         }
     }
 }

@@ -3,20 +3,16 @@ import {
     ChatInputCommandInteraction,
     ClientEvents,
     Guild,
-    Message,
-    User,
+    Message
 } from 'discord.js'
 
 import { Command } from './Command'
 import { CustomClient } from './CustomClient'
-import { BlacklistModel } from '@/database/core/models'
 
 export interface CustomClientEvents extends ClientEvents {
     chatInputInteractionCreate: [ChatInputCommandInteraction];
     buttonInteractionCreate: [ButtonInteraction];
     commandCreate: [Command, Message | ChatInputCommandInteraction, string[] | null[]];
-    blacklistCreate: [BlacklistModel, Guild, User, User];
-    blacklistTreated: [BlacklistModel];
     hubReady: [Guild];
     clientSetup: [CustomClient];
 };
@@ -37,9 +33,7 @@ export interface EventOptions<Event extends keyof CustomClientEvents> {
 export class Event<Event extends keyof CustomClientEvents> {
     name: Event;
     once: boolean;
-
     run: (options: EventRunOptions<Event>) => any;
-
     constructor(data: EventOptions<Event>) {
         if (typeof data.run !== 'function') {
             throw new Error('The "run" property must be a function !');

@@ -1,5 +1,4 @@
-import { guildModuleService } from '@/database/services'
-import { defaultGuildModuleSettings } from '@/database/utils'
+import { GuildModuleName, GuildModuleService } from '@/database/services/guild-module.service';
 import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
 
@@ -21,7 +20,7 @@ export default new Command({
             });
         }
 
-        if (!(moduleName in defaultGuildModuleSettings)) {
+        if (!(moduleName in GuildModuleService.repos)) {
             return await message.reply({
                 embeds: [
                     EmbedUI.createErrorMessage(`Mhh.. Je ne trouves pas de module avec ce nom, t'es certain d'avoir utilisé le bon nom ? 🤔`)
@@ -29,10 +28,7 @@ export default new Command({
             });
         }
 
-        await guildModuleService.resetSettings({
-            guildId: message.guild.id,
-            moduleName: moduleName as any
-        });
+        await GuildModuleService.resetModule(message.guild.id, moduleName as GuildModuleName);
 
         return await message.reply({
             embeds: [

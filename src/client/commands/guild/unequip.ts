@@ -1,10 +1,9 @@
 import { Command } from '@/structures/Command'
 import { GuildMember, MessageFlags } from 'discord.js'
 
-import { shopItemService } from '@/database/services'
-
 import { EmbedUI } from '@/ui/EmbedUI'
 import { createActionRow, createButton } from '@/ui/components/common'
+import { ShopItemService } from '@/database/services/shop-item.service'
 
 export default new Command({
     nameLocalizations: {
@@ -15,7 +14,7 @@ export default new Command({
         fr: '🎨 Retirer un rôle de boutique'
     },
     async onInteraction(interaction) {
-        const allItems = await shopItemService.allItems(interaction.guild.id);
+        const allItems = await ShopItemService.allItems(interaction.guild.id);
         const member = interaction.member as GuildMember
 
         const roles = allItems.filter((f) => member.roles.cache.has(f.roleId));

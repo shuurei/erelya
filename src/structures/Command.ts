@@ -6,12 +6,12 @@ import {
     Message,
     PermissionFlagsBits,
     PermissionResolvable,
+    PermissionsBitField,
     RESTPostAPIApplicationCommandsJSONBody
 } from 'discord.js'
 
-import { defaultGuildModuleSettings } from '@/database/utils'
-
 import client from '@/client/instance'
+import { BooleanKeys, GuildModuleEntity, GuildModuleName } from '@/database/services/guild-module.service';
 
 // --- Message Command ---
 export enum MessageCommandStyle {
@@ -59,9 +59,9 @@ export interface CommandAccessOptions {
         isPremium?: boolean;
         isPartner?: boolean;
         modules?: Partial<{
-            [K in keyof typeof defaultGuildModuleSettings]: Partial<{
-                [P in keyof typeof defaultGuildModuleSettings[K]]: boolean
-            }> | boolean
+            [K in GuildModuleName]: Partial<{
+                [P in BooleanKeys<GuildModuleEntity<K>>]: boolean;
+            }>
         }>
     };
 }
@@ -173,13 +173,9 @@ export class Command {
         if (this.access?.user?.requiredPermissions) {
             data.default_member_permissions = this.access.user.requiredPermissions.reduce((
                 acc: bigint,
-                perm: keyof typeof PermissionFlagsBits | bigint
+                perm: PermissionResolvable
             ) => {
-                const bit = typeof perm === 'bigint'
-                    ? perm
-                    : BigInt(PermissionFlagsBits[perm]);
-
-                return acc | bit;
+                return acc | PermissionsBitField.resolve(perm);
             }, 0n).toString();
         }
 

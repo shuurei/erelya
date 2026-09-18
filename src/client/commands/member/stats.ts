@@ -1,12 +1,11 @@
 import { Command, CustomClient } from '@/structures'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
 
-import { memberService } from '@/database/services'
-
 import { EmbedUI } from '@/ui'
 
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, parseUserMention } from '@/utils'
+import { GuildMemberService } from '@/database/services/guild-member.service'
 
 const formatTime = (minutes: number) => {
     if (!minutes) return '**0** min';
@@ -33,7 +32,7 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
         memberDatabase
     ] = await Promise.all([
         guildMemberHelper(member),
-        memberService.findById({ userId: member.id, guildId: member.guild.id })
+        GuildMemberService.findById({ userId: member.id, guildId: member.guild.id })
     ]);
 
     const memberAvatarDominantColor = await getDominantColor(memberHelper.getAvatarURL());

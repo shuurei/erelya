@@ -1,23 +1,21 @@
 import { Command } from '@/structures/Command'
 import { GuildMember } from 'discord.js'
 
-import db from '@/database/db'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { MoreThan, MoreThanOrEqual } from 'typeorm'
 
 const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id
     const guild = member.guild
 
-    const rankers = (await db.member.findMany({
+    const rankers = (await GuildMemberService.repo.find({
         where: {
-            guildId: guild.id,
-            dailyStreak: { gt: 0 },
-            lastAttendedAt: {
-                gte: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
-            }
+            guildId: guild.id, dailyStreak: MoreThan(0),
+            lastAttendedAt: MoreThanOrEqual(new Date(Date.now() - 48 * 60 * 60 * 1000))
         }
     })).sort((a, b) => {
         if (b.dailyStreak !== a.dailyStreak) {
@@ -94,13 +92,13 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                eco: true
+                economy: { isEnabled: true }
             }
         }
     },
     messageCommand: {
         style: 'flat',
-        aliases: ['topstreak', 'tstreak'],
+        aliases: ['topstreak', 'tstreak']
     },
     async onInteraction(interaction) {
         await interaction.deferReply()

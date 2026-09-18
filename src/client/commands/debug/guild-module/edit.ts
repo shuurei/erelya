@@ -1,18 +1,21 @@
-import { guildModuleService } from '@/database/services'
-import { defaultGuildModuleSettings } from '@/database/utils'
+import { GuildModuleService, GuildModuleName } from '@/database/services/guild-module.service'
 import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
 
+import * as GuildModules from '@/database/entities/guild-module'
+
 export default new Command({
     access: {
-        user: {
-            isDeveloper: true
-        }
+        user: { isDeveloper: true }
     },
     messageCommand: {
         style: 'slashCommand'
     },
     async onMessage(message, { args: [moduleName, fieldName, value] }) {
+        if (moduleName) {
+            moduleName = moduleName.toLowerCase();
+        }
+
         if (!moduleName) {
             return await message.reply({
                 embeds: [
@@ -21,7 +24,7 @@ export default new Command({
             });
         }
 
-        if (!(moduleName in defaultGuildModuleSettings)) {
+        if (!(moduleName in GuildModuleService.repos)) {
             return await message.reply({
                 embeds: [
                     EmbedUI.createErrorMessage(`Mhh.. Je ne trouves pas de **module** avec ce nom, êtes t'es certain d'avoir utilisé le bon nom ? 🤔`)
@@ -37,7 +40,11 @@ export default new Command({
             });
         }
 
-        if (!(fieldName in (defaultGuildModuleSettings as any)[moduleName])) {
+        const defaultModule = (GuildModules as any)[`default${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`];
+
+        console.log(defaultModule, moduleName)
+
+        if (!(fieldName in defaultModule)) {
             return await message.reply({
                 embeds: [
                     EmbedUI.createErrorMessage(`Mhh.. Je ne trouves pas de **champ** avec ce nom, t'es certain d'avoir utilisé le bon nom ? 🤔`)
@@ -53,7 +60,7 @@ export default new Command({
             });
         }
 
-        const fieldType = typeof (defaultGuildModuleSettings as any)[moduleName][fieldName];
+        const fieldType = typeof defaultModule[fieldName];
         let fieldValue : any = value;
 
         if (fieldType === 'number') {
@@ -62,10 +69,9 @@ export default new Command({
             fieldValue = value === 'true';
         }
 
-        await guildModuleService.updateSettingField({
-            guildId: message.guild.id,
-            moduleName: moduleName as any,
-        }, fieldName, fieldValue);
+        await GuildModuleService.repos[moduleName as GuildModuleName].update({ guildId: message.guild.id }, {
+            [fieldName]: fieldValue
+        });
 
         return await message.reply({
             embeds: [

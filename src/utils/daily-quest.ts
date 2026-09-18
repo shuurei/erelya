@@ -1,3 +1,5 @@
+import { GuildMemberDailyQuestType } from "@/database/entities/guild-member/daily-quest.entity";
+
 export type QuestValue = {
     rewards: {
         guildCoins?: number;
@@ -239,16 +241,15 @@ export const getRandomFromPool = (pool: QuestValue[]): QuestValue => {
     return pool[0];
 }
 
-export const generateDailyQuest = (): Partial<Record<'voice' | 'streaming', QuestValue>> => {
+export const generateDailyQuest = () => {
     const isVoiceQuest = Math.random() < 0.5;
 
     return {
-        [isVoiceQuest ? 'voice' : 'streaming']: getRandomFromPool(isVoiceQuest ? VOICE_POOL : STREAMING_POOL)
+        type: isVoiceQuest ? GuildMemberDailyQuestType.CALL : GuildMemberDailyQuestType.STREAM,
+        ...getRandomFromPool(isVoiceQuest ? VOICE_POOL : STREAMING_POOL)
     }
 }
 
-export const calculateQuestBonusMultiplier = (quest: Partial<Record<'voice' | 'streaming', QuestValue>>) => {
-    const current = quest.voice ? quest.voice : quest.streaming;
-
-    return current ? RARITY_BONUS[current.rarity] : 0;
+export const calculateQuestBonusMultiplier = (quest: QuestValue | undefined) => {
+    return quest ? RARITY_BONUS[quest.rarity] : 0;
 }

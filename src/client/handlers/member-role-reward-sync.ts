@@ -1,5 +1,5 @@
-import { guildLevelRewardService } from '@/database/services'
 import { Guild, GuildMember } from 'discord.js'
+import { GuildLevelRewardService } from '@/database/services/guild-level-reward.service'
 
 export async function handleMemberRoleRewardSync({
     guild,
@@ -10,7 +10,7 @@ export async function handleMemberRoleRewardSync({
     member: GuildMember;
     activityLevel: number;
 }) {
-    const rewards = await guildLevelRewardService.all(guild.id);
+    const rewards = await GuildLevelRewardService.all(guild.id);
     if (!rewards.length) return { totalGuildPoints: 0, roleIds: [] };
 
     const eligibleRewards = rewards
@@ -38,7 +38,7 @@ export async function handleMemberRoleRewardSync({
         await member.roles.add(rolesToAdd.map(({ roleId }) => roleId!));
     }
 
-    const totalGuildPoints = rolesToAdd.reduce((sum, { guildPointsReward }) => sum + (guildPointsReward ?? 0), 0);
+    const totalGuildPoints = rolesToAdd.reduce((sum, { coinsReward }) => sum + (coinsReward ?? 0), 0);
     const addedRoleIds = rolesToAdd.map(r => r.roleId!);
 
     return {

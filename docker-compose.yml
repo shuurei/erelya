@@ -1,19 +1,26 @@
 services:
     prod:
-        container_name: erelya-bot-prod
-        build:
-            context: .
-            dockerfile: Dockerfile
-            args:
-                DATABASE_URL: ${DATABASE_URL}
+        container_name: erelya-prod
         image: erelya:latest
-        restart: always
-        env_file: .env.prod
-    preview:
-        container_name: erelya-bot-preview
         build:
             context: .
             dockerfile: Dockerfile
-        image: erelya:preview
         restart: always
         env_file: .env.prod
+    db:
+        image: postgres:18
+        container_name: erelya-db
+        restart: unless-stopped
+        env_file: .env
+        environment:
+            POSTGRES_DB: ${DATABASE_NAME}
+            POSTGRES_USER: ${DATABASE_USER}
+            POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+            POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+            - "${DATABASE_PORT}:${DATABASE_PORT}"
+        volumes:
+            - data:/var/lib/postgresql
+
+volumes:
+    data: {}

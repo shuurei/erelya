@@ -21,23 +21,21 @@ import {
     createThumbnail
 } from '@/ui/components/common'
 
-import { ShopItemModel, ShopModel } from '@/database/core/models'
-import {
-    shopItemService,
-    memberService,
-    shopService,
-    guildModuleService,
-    userService
-} from '@/database/services'
-
 import { escapeAllMarkdown, getDominantColor, timeElapsedFactor } from '@/utils'
 import { applicationEmojiHelper } from '@/helpers'
+import { Shop } from '@/database/entities/shop.entity'
+import { ShopItem } from '@/database/entities/shop-item.entity'
+import { ShopService } from '@/database/services/shop.service'
+import { GuildModuleService } from '@/database/services/guild-module.service'
+import { UserService } from '@/database/services/user.service'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { ShopItemService } from '@/database/services/shop-item.service'
 
 const ITEMS_PER_PAGE = 5;
 
 type ShopState = {
-    shop: ShopModel | null;
-    items: (ShopItemModel & { role: Role })[];
+    shop: Shop | null;
+    items: (ShopItem & { role: Role })[];
     page: number;
 };
 
@@ -50,7 +48,7 @@ const buildShopSelector = ({
     guildName: string;
     guildIconURL: string | null;
     color?: number;
-    shops: ShopModel[];
+    shops: Shop[];
 }) => {
     const components: any[] = [];
 
@@ -115,8 +113,8 @@ const buildShopView = ({
     totalGuildPoints,
     tagRolePriceDiscount
 }: {
-    shop: ShopModel;
-    items: (ShopItemModel & { role: Role })[];
+    shop: Shop;
+    items: (ShopItem & { role: Role })[];
     page: number;
     totalPages: number;
     totalGuildPoints: number;
@@ -277,7 +275,7 @@ const buildShopView = ({
 };
 
 const getShops = async (guildId: string) => {
-    return (await shopService.all(guildId))
+    return (await ShopService.all(guildId))
         .filter(s => s.isOpen)
         .sort((a, b) => b.name.length - a.name.length);
 };
@@ -293,7 +291,7 @@ export default new Command({
     access: {
         guild: {
             modules: {
-                eco: { isShopEnabled: true }
+                economy: { isShopEnabled: true }
             }
         }
     },
@@ -347,15 +345,12 @@ export default new Command({
                 )
             );
 
-            const guildEcoModule = await guildModuleService.findById({
-                guildId,
-                moduleName: 'eco'
-            });
+            const guildEcoModule = await GuildModuleService.findByName(guildId, 'economy');
 
-            const userDatabase = await userService.findById(userId);
-            const tagBoostPercent = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * (guildEcoModule?.settings?.tagRolePriceDiscount ?? 0)
+            const userDatabase = await UserService.findById(userId);
+            const tagBoostPercent = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * (guildEcoModule?.supporterPriceDiscount ?? 0)
 
-            const { guildCoins } = (await memberService.findById({ userId, guildId })) ?? { guildCoins: 0 };
+            const { coins } = (await GuildMemberService.findById({ userId, guildId })) ?? { coins: 0 };
 
             return buildShopView({
                 shop: state.shop,
@@ -363,7 +358,7 @@ export default new Command({
                 page: state.page,
                 totalPages: Math.ceil(state.items.length / ITEMS_PER_PAGE),
                 color: state.shop.color ?? guildColor,
-                totalGuildPoints: guildCoins,
+                totalGuildPoints: coins,
                 tagRolePriceDiscount: tagBoostPercent > 0.1 ? tagBoostPercent : 0
             });
         };
@@ -383,7 +378,7 @@ export default new Command({
             }
 
             if (state.shop && state.shop.expiresAt) {
-                state.shop = await shopService.findById({
+                state.shop = await ShopService.findById({
                     guildId,
                     name: state.shop.name
                 });
@@ -414,7 +409,7 @@ export default new Command({
                     state.shop = shops[+i.values[0]];
                     state.page = 0;
 
-                    const items = await shopItemService.all({
+                    const items = await ShopItemService.all({
                         guildId: guild.id,
                         shopName: state.shop.name
                     })
@@ -471,15 +466,12 @@ export default new Command({
                         });
                     }
 
-                    const guildEcoModule = await guildModuleService.findById({
-                        guildId,
-                        moduleName: 'eco'
-                    });
+                    const guildEcoModule = await GuildModuleService.findByName(guildId, 'economy');
 
-                    const tagRolePriceDiscount = guildEcoModule?.settings?.tagRolePriceDiscount ?? 0;
+                    const tagRolePriceDiscount = guildEcoModule?.supporterPriceDiscount ?? 0;
 
                     if (state.shop.useTagDiscount && tagRolePriceDiscount && (item.cost > 0)) {
-                        const userDatabase = await userService.findById(userId);
+                        const userDatabase = await UserService.findById(userId);
                         const tagBoostPercent = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * tagRolePriceDiscount
 
                         if (tagBoostPercent > 0.1) {
@@ -487,9 +479,9 @@ export default new Command({
                         }
                     }
 
-                    const { guildCoins } = (await memberService.findById({ userId, guildId })) ?? { guildCoins: 0 };
+                    const { coins } = (await GuildMemberService.findById({ userId, guildId })) ?? { coins: 0 };
 
-                    if (item.cost > guildCoins) {
+                    if (item.cost > coins) {
                         await refreshShop();
                         return await i.followUp({
                             flags: MessageFlags.Ephemeral,
@@ -546,7 +538,7 @@ export default new Command({
 
                         try {
                             if (typeof item.stock === 'number') {
-                                await shopItemService.decrementStock({
+                                await ShopItemService.decrementStock({
                                     guildId,
                                     roleId: item.roleId,
                                     shopName: state.shop.name
@@ -555,7 +547,7 @@ export default new Command({
                                 item.stock--
                             }
 
-                            await memberService.removeGuildCoins({ userId, guildId }, item.cost);
+                            await GuildMemberService.removeCoins({ userId, guildId }, item.cost);
 
                             for (const item of state.items) {
                                 if (i.member.roles.cache.get(item.roleId)) {

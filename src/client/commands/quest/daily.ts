@@ -1,8 +1,5 @@
 import { Command } from '@/structures/Command'
 
-import { memberDailyQuestService } from '@/database/services/member-daily-quest'
-import { guildModuleService, memberService } from '@/database/services'
-
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { createActionRow, createButton } from '@/ui/components/common'
 import { createProgressBar } from '@/ui/components'
@@ -15,13 +12,23 @@ import { DateTime } from 'luxon'
 
 import { handleMemberDailyQuestSync } from '@/client/handlers/member-daily-quest-sync'
 import { calculateQuestBonusMultiplier, STREAMING_POOL, VOICE_POOL } from '@/utils/daily-quest'
+import { GuildModuleService } from '@/database/services/guild-module.service'
+import { GuildMemberService } from '@/database/services/guild-member.service'
+import { GuildMemberDailyQuestService } from '@/database/services/guild-member-daily-quest.service'
+import { GuildMemberDailyQuestType } from '@/database/entities/guild-member/daily-quest.entity'
 
 export default new Command({
     nameLocalizations: { fr: 'quotidienne' },
     description: "🎯 View your daily quest",
     descriptionLocalizations: { fr: "🎯 Consulte ta quête quotidienne du jour" },
     access: {
-        guild: { modules: { quest: true } }
+        guild: {
+            modules: {
+                economy: { isEnabled: true },
+                level: { isEnabled: true },
+                quest: { isEnabled: true, isVoiceQuestEnabeld: true }
+            }
+        }
     },
     async onInteraction(interaction) {
         await interaction.deferReply();
@@ -29,27 +36,10 @@ export default new Command({
         const guild = interaction.guild;
         const guildId = guild.id;
 
-        const [
-            guildEcoModule,
-            guildLevelModule,
-            guildQuestModule,
-        ] = await Promise.all([
-            guildModuleService.findById({ moduleName: 'eco', guildId }),
-            guildModuleService.findById({ moduleName: 'level', guildId }),
-            guildModuleService.findById({ moduleName: 'quest', guildId }),
+        const [guildEcoModule, guildLevelModule] = await Promise.all([
+            GuildModuleService.findOrCreate(guildId, 'economy'),
+            GuildModuleService.findOrCreate(guildId, 'level'),
         ]);
-
-        const isVoiceQuestEnabeld = guildQuestModule?.settings?.isVoiceQuestEnabeld;
-        if (!(guildEcoModule?.isActive || guildLevelModule?.isActive) || !(isVoiceQuestEnabeld)) {
-            return await interaction.editReply({
-                embeds: [
-                    EmbedUI.createErrorMessage({
-                        title: '// Module désactivé',
-                        description: `Un ou plusieurs modules requis sont désactivés par le gérant du serveur`
-                    })
-                ]
-            });
-        }
 
         const { whiteArrowEmoji } = applicationEmojiHelper();
 
@@ -69,51 +59,39 @@ export default new Command({
         const nowInGuildTZ = DateTime.now().setZone(guildTZ);
         const midnightInGuildTZ = nowInGuildTZ.endOf('day');
 
-        const quest = {
-            voice: VOICE_POOL.find((f) => f.value === questDatabase?.voiceMinutesTarget),
-            streaming: STREAMING_POOL.find((f) => f.value === questDatabase?.streamingMinutesTarget)
+        const quest = (questDatabase.type === GuildMemberDailyQuestType.CALL ? VOICE_POOL : STREAMING_POOL).find((f) => f.value === questDatabase.target);
+        if (!quest) {
+            throw new Error('No quest found : ', { cause: quest });
         }
 
         const bonusMultiplier = calculateQuestBonusMultiplier(quest);
 
         const fields = [];
 
-        if (isVoiceQuestEnabeld) {
-            if (quest.voice) {
-                fields.push({
-                    name: `🔊 Vocal`,
-                    value: [
-                        `**${formatTimeLeftFromMinutes(questDatabase.voiceMinutesProgress)}** / **${formatTimeLeftFromMinutes(quest.voice.value)}**`,
-                        createProgressBar(Math.max(0, questDatabase.voiceMinutesProgress / quest.voice.value), { length: 7, asciiChar: true, showPercentage: true }),
-                    ].join('\n'),
-                    inline: true
-                });
-            } else if (quest.streaming) {
-                fields.push({
-                    name: `🎥 Streaming`,
-                    value: [
-                        `**${formatTimeLeftFromMinutes(questDatabase.streamingMinutesProgress)}** / **${formatTimeLeftFromMinutes(quest.streaming.value)}**`,
-                        createProgressBar(Math.max(0, questDatabase.streamingMinutesProgress / quest.streaming.value), { length: 7, asciiChar: true, showPercentage: true }),
-                    ].join('\n'),
-                    inline: true
-                });
-            }
-        }
+        fields.push({
+            name: questDatabase.type === GuildMemberDailyQuestType.CALL
+                ? '🔊 Vocal'
+                : '🎥 Streaming',
+            value: [
+                `**${formatTimeLeftFromMinutes(questDatabase.progress)}** / **${formatTimeLeftFromMinutes(quest.value)}**`,
+                createProgressBar(Math.max(0, questDatabase.progress / quest.value), { length: 7, asciiChar: true, showPercentage: true }),
+            ].join('\n'),
+            inline: true
+        });
 
-        const current = quest.voice ?? quest.streaming!;
-
-        const guildCoinsReward = Math.floor((current!.rewards.guildCoins ?? 0) * bonusMultiplier);
-        const activityXpReward = Math.floor((current!.rewards.activityXp ?? 0) * bonusMultiplier);
+        const guildCoinsReward = Math.floor((quest.rewards.guildCoins ?? 0) * bonusMultiplier);
+        const activityXpReward = Math.floor((quest.rewards.activityXp ?? 0) * bonusMultiplier);
 
         fields.push({
             name: 'Récompenses',
             value: [
-                guildEcoModule?.isActive && `- :coin: Pièces de serveur ${whiteArrowEmoji} **${guildCoinsReward.toLocaleString('en')}**`,
-                guildLevelModule?.isActive && `- 🧪 XP ${whiteArrowEmoji} **${activityXpReward.toLocaleString('en')}**`
-            ].filter(Boolean).join('\n')
+                guildEcoModule?.isEnabled && `- :coin: Pièces de serveur ${whiteArrowEmoji} **${guildCoinsReward.toLocaleString('en')}**`,
+                guildLevelModule?.isEnabled && `- 🧪 XP ${whiteArrowEmoji} **${activityXpReward.toLocaleString('en')}**`
+            ].filter(Boolean).join('\n'),
+            inline: true
         });
 
-        const isCompleted = questDatabase[`${quest.voice ? 'voice' : 'streaming'}MinutesProgress`] === current.value;
+        const isCompleted = questDatabase.progress >= quest.value;
 
         const payload = {
             color: memberAvatarDominantColor,
@@ -156,19 +134,19 @@ export default new Command({
         });
 
         collector.on('collect', async (i) => {
-            questDatabase = await memberDailyQuestService.findOrCreate(memberKey);
+            questDatabase = await GuildMemberDailyQuestService.findOrCreate(memberKey);
 
             if (questDatabase?.isClaimed) {
                 return await interaction.deleteReply();
             }
 
-            questDatabase = await memberDailyQuestService.updateOrCreate(memberKey, { isClaimed: true });
+            questDatabase = await GuildMemberDailyQuestService.updateOrCreate(memberKey, { isClaimed: true });
 
-            if (guildEcoModule?.isActive) {
-                await memberService.addGuildCoins(memberKey, guildCoinsReward);
+            if (guildEcoModule?.isEnabled) {
+                await GuildMemberService.addCoins(memberKey, guildCoinsReward);
             }
 
-            if (guildLevelModule?.isActive) {
+            if (guildLevelModule?.isEnabled) {
                 await handleMemberCheckLevelUp({
                     member,
                     channel: interaction.channel,

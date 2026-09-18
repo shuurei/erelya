@@ -1,12 +1,10 @@
-import { applicationEmojiHelper } from '@/helpers';
 import { Command } from '@/structures/Command'
+import { applicationEmojiHelper } from '@/helpers'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Command({
     access: {
-        user: {
-            isDeveloper: true
-        }
+        user: { isDeveloper: true }
     },
     messageCommand: {
         style: 'slashCommand'
