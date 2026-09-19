@@ -33,7 +33,7 @@ const buildPayload = async (client: CustomClient) => {
                     value: [
                         `> Build \`${process.env.BUILD_VERSION}\``,
                         `> Numéro \`${process.env.BUILD_NUMBER}\``,
-                        `> Commit \`${process.env.GIT_COMMIT}\``,
+                        `> Commit [${process.env.GIT_COMMIT}](https://github.com/shuurei/erelya/tree/${process.env.GIT_COMMIT})`,
                     ].join('\n')
                 },
                 {
