@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate build info
+        id: build
+        run: |
+          echo "version=$(date -u +'%y.%m.%d')" >> "$GITHUB_OUTPUT"
+          echo "number=$(date -u +'%H%M%S')" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          echo "## Changes" > release-notes.md
+          echo "" >> release-notes.md
+
+          git log -1 --pretty=format:"- %s" >> release-notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.build.outputs.version }}-${{ steps.build.outputs.number }}
+          name: ${{ steps.build.outputs.version }} (${{ steps.build.outputs.number }})
+          body_path: release-notes.md
+          target_commitish: ${{ github.sha }}

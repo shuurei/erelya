@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-    entry: [ 'src/**/**.ts' ],
+    entry: ['src/**/**.ts'],
     outDir: 'build',
     format: ['esm'],
     target: 'esnext',
@@ -10,9 +10,9 @@ export default defineConfig({
     clean: true,
     external: [
         '@napi-rs/canvas',
-        'discord.js',
+        'discord.js'
     ],
     define: {
-        'process.env.ENV': JSON.stringify('PROD'),
+        'process.env.ENV': JSON.stringify('PROD')
     }
 });

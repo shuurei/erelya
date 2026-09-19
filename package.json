@@ -1,6 +1,5 @@
 {
 	"name": "erelya",
-	"version": "26.09.13",
 	"description": "Erelya Bot is an Open-Source Discord bot offering moderation tools, fun commands, and customizable features for your community ! :)",
 	"type": "module",
 	"license": "CC-BY-NC-ND-4.0",
@@ -44,6 +43,6 @@
 		"typescript": "^7.0.2"
 	},
 	"engines": {
-		"node": "^24"
+		"node": "^26"
 	}
 }

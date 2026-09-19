@@ -1,21 +1,5 @@
-import {
-    Client,
-    ClientOptions,
-    ActivityType,
-    DiscordjsErrorCodes,
-    DefaultWebSocketManagerOptions,
-    Guild,
-    TextChannel,
-    Collection,
-    ForumChannel,
-    ChannelType,
-} from 'discord.js'
-
-import {
-    CallSessionManager,
-    CommandManager,
-    EventManager,
-} from '@/client/managers'
+import { Client, ClientOptions, ActivityType, DiscordjsErrorCodes, DefaultWebSocketManagerOptions, Guild, TextChannel, Collection, ForumChannel, ChannelType } from 'discord.js'
+import { CallSessionManager, CommandManager, EventManager } from '@/client/managers'
 
 import logger from '@/utils/logger'
 
@@ -38,7 +22,6 @@ interface CustomClientSpamBufferData {
     messageCount: number;
 }
 
-import pkg from '@pkg'
 import { startAllJobs } from '@/client/jobs'
 
 export class CustomClient extends Client {
@@ -57,8 +40,6 @@ export class CustomClient extends Client {
     spamBuffer: Collection<string, CustomClientSpamBufferData>;
 
     logger: Logger;
-
-    reflexions: string[];
 
     on<Event extends keyof CustomClientEvents>(
         event: Event,
@@ -92,6 +73,17 @@ export class CustomClient extends Client {
         return super.removeAllListeners(event as string);
     };
 
+    get reflexions() {
+        return [
+            `v${process.env.BUILD_VERSION} (${process.env.BUILD_NUMBER})`,
+            "Bonjour, le monde !",
+            "existential.exe en cours d'exécution..",
+            "J'❤ Radiohead",
+            "J'❤ Daniel Caesar",
+            "La prédiction du chaos.. Est plutôt juste ?"
+        ] as const;
+    }
+
     constructor(options: ClientOptions) {
         super({
             ...options,
@@ -100,7 +92,7 @@ export class CustomClient extends Client {
                     manager.options.identifyProperties.browser = 'Discord Android';
                     return DefaultWebSocketManagerOptions?.buildStrategy(manager);
                 }
-            },
+            }
         });
 
         this.events = new EventManager(this);
@@ -112,16 +104,6 @@ export class CustomClient extends Client {
         this.logger = logger.use({
             prefix: (c) => c.white(`[CLIENT] <🤖>`)
         });
-
-        this.reflexions = [
-            `v${pkg.version}`,
-            "Bonjour le monde !",
-            "existential.exe en cours d'exécution..",
-            "J'❤ Radiohead",
-            "La prédiction du chaos.. Est plutôt juste ?",
-            "Puis-je aimer ? Mhh",
-            "Fonctionne à vide.. En quelque sorte ?",
-        ] as const;
     }
 
     randomReflexion() {
