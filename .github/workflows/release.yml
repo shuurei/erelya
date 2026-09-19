@@ -36,7 +36,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.build.outputs.version }}-${{ steps.build.outputs.number }}
-          name: ${{ steps.build.outputs.version }} (${{ steps.build.outputs.number }})
+          tag_name: v${{ steps.build.outputs.version }}-${{ steps.build.outputs.number }}
+          name: v${{ steps.build.outputs.version }} (${{ steps.build.outputs.number }})
           body_path: release-notes.md
           target_commitish: ${{ github.sha }}
