@@ -1,15 +1,28 @@
 import 'dotenv/config'
-import './helpers/extends/String'
-import './helpers/extends/Math'
 import 'reflect-metadata'
 
+import './helpers/extends/String'
+import './helpers/extends/Math'
+
 import pkg from '@pkg'
+import { execSync } from 'child_process'
 
 const env = process.env.ENV;
 process.title = pkg.name.toUpperCase();
 
-import { version as djsVersion } from 'discord.js'
-import typeormPkg from 'typeorm/package.json' with { type: 'json' }
+const now = new Date();
+
+if (!process.env.BUILD_VERSION) {
+    process.env.BUILD_VERSION = `${String(now.getUTCFullYear()).slice(-2)}.${String(now.getUTCMonth() + 1).padStart(2, '0')}.${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
+if (!process.env.BUILD_NUMBER) {
+    process.env.BUILD_NUMBER = `${String(now.getUTCHours()).padStart(2, '0')}${String(now.getUTCMinutes()).padStart(2, '0')}${String(now.getUTCSeconds()).padStart(2, '0')}`;
+}
+
+if (!process.env.GIT_COMMIT) {
+    process.env.GIT_COMMIT = execSync(`git rev-parse --short HEAD`, { encoding: 'utf8', }).trim();
+}
 
 import logger from './utils/logger'
 import client from './client/instance'
@@ -48,19 +61,19 @@ logger.log(({ gradient }) =>
     ASCII_LOGO.map((line) => gradient('#5053ff', '#9650ff', line)).join('\n')
 );
 
-logger.header(({ custom }) => custom(env === 'DEV' ? '#ff8f8f' : env === 'PROD' ? '#8fffab' : '#ffe18f', env === 'DEV' ? `✦ ${env} ✦` :  `✦ ${env} - v${pkg.version} ✦`));
+logger.header(({ custom }) => custom(env === 'DEV' ? '#ff8f8f' : env === 'PROD' ? '#8fffab' : '#ffe18f', `✦ ${env} ✦`));
 logger.list([
     {
-        label: 'DiscordJs',
-        value: `v${djsVersion}`
+        label: 'Build Version',
+        value: process.env.BUILD_VERSION
     },
     {
-        label: 'NodeJs',
-        value: process.version
+        label: 'Build Number',
+        value: process.env.BUILD_NUMBER
     },
     {
-        label: 'Typeorm',
-        value: `v${typeormPkg.version}`
+        label: 'Git Commit',
+        value: process.env.GIT_COMMIT
     }
 ]);
 logger.header(({ purpleBright }) => purpleBright('✦ OPERATING SYSTEM ✦'));

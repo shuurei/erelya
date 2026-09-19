@@ -15,7 +15,7 @@ export const client = new CustomClient({
         Partials.Message,
         Partials.Channel,
         Partials.User
-    ],
+    ]
 });
 
 export default client;
