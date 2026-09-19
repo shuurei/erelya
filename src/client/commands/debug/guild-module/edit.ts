@@ -3,6 +3,7 @@ import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import * as GuildModules from '@/database/entities/guild-module'
+import { GuildService } from '@/database/services/guild.service';
 
 export default new Command({
     access: {
@@ -61,7 +62,7 @@ export default new Command({
         }
 
         const fieldType = typeof defaultModule[fieldName];
-        let fieldValue : any = value;
+        let fieldValue: any = value;
 
         if (fieldType === 'number') {
             fieldValue = parseInt(value);
@@ -69,9 +70,11 @@ export default new Command({
             fieldValue = value === 'true';
         }
 
-        await GuildModuleService.repos[moduleName as GuildModuleName].update({ guildId: message.guild.id }, {
-            [fieldName]: fieldValue
-        });
+        await GuildService.findOrCreate(message.guild.id);
+        await GuildModuleService.repos[moduleName as GuildModuleName].upsert({
+            guildId: message.guild.id,
+            [fieldName]: fieldValue,
+        }, ['guildId']);
 
         return await message.reply({
             embeds: [
