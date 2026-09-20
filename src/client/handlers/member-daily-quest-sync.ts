@@ -26,6 +26,7 @@ export async function handleMemberDailyQuestSync(memberKey: { userId: string; gu
         quest = await GuildMemberDailyQuestService.updateOrCreate(memberKey, {
             type,
             target: value,
+            progress: 0,
             startAt: new Date(),
             isClaimed: false
         });
