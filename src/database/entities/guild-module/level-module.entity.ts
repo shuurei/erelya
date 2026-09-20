@@ -34,31 +34,31 @@ export class LevelModule {
     isEnabled: boolean;
 
     // Boost Factor
-    @Column({ type: 'numeric', default: defaultLevelModule.guildBoosterFactor })
+    @Column({ type: 'real', default: defaultLevelModule.guildBoosterFactor })
     guildBoosterFactor: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.tagSupporterFactor })
+    @Column({ type: 'real', default: defaultLevelModule.tagSupporterFactor })
     tagSupporterFactor: number;
 
     // Mesage
     @Column({ type: 'boolean', default: defaultLevelModule.isXpFromMessageEnabled })
     isXpFromMessageEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultLevelModule.messageChance })
+    @Column({ type: 'real', default: defaultLevelModule.messageChance })
     messageChance: number;
 
     // Call
     @Column({ type: 'boolean', default: defaultLevelModule.isXpFromCallEnabled })
     isXpFromCallEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultLevelModule.callGainIntervalMinutes })
+    @Column({ type: 'real', default: defaultLevelModule.callGainIntervalMinutes })
     callGainIntervalMinutes: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.callPrivatePenalty })
+    @Column({ type: 'real', default: defaultLevelModule.callPrivatePenalty })
     callPrivatePenalty: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.callMutedPenalty })
+    @Column({ type: 'real', default: defaultLevelModule.callMutedPenalty })
     callMutedPenalty: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.callDeafPenalty })
+    @Column({ type: 'real', default: defaultLevelModule.callDeafPenalty })
     callDeafPenalty: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.callCameraBonus })
+    @Column({ type: 'real', default: defaultLevelModule.callCameraBonus })
     callCameraBonus: number;
-    @Column({ type: 'numeric', default: defaultLevelModule.callStreamBonus })
+    @Column({ type: 'real', default: defaultLevelModule.callStreamBonus })
     callStreamBonus: number;
 
     // Growth
