@@ -107,6 +107,8 @@ new Cron('* * * * *', async () => {
                         randomNumber(minGain, maxGain) * (1 + bonusFactor) * (1 - penaltyFactor)
                     );
 
+                    console.log(randomXP)
+
                     if (randomXP > 0) {
                         await handleMemberCheckLevelUp({
                             member,
