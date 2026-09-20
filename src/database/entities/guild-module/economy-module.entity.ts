@@ -57,15 +57,15 @@ export class EconomyModule {
     isEnabled: boolean;
 
     // Boost Factor
-    @Column({ type: 'numeric', default: defaultEconomyModule.guildBoosterFactor })
+    @Column({ type: 'real', default: defaultEconomyModule.guildBoosterFactor })
     guildBoosterFactor: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.tagSupporterFactor })
+    @Column({ type: 'real', default: defaultEconomyModule.tagSupporterFactor })
     tagSupporterFactor: number;
 
     // Message
     @Column({ type: 'boolean', default: defaultEconomyModule.isGuildCoinsFromMessageEnabled })
     isGuildCoinsFromMessageEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultEconomyModule.messageChance })
+    @Column({ type: 'real', default: defaultEconomyModule.messageChance })
     messageChance: number;
     @Column({ type: 'int', default: defaultEconomyModule.messageMinGain })
     messageMinGain: number;
@@ -75,15 +75,15 @@ export class EconomyModule {
     // Call
     @Column({ type: 'boolean', default: defaultEconomyModule.isGuildCoinsFromCallEnabled })
     isGuildCoinsFromCallEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultEconomyModule.callPrivatePenalty })
+    @Column({ type: 'real', default: defaultEconomyModule.callPrivatePenalty })
     callPrivatePenalty: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.callMutedPenalty })
+    @Column({ type: 'real', default: defaultEconomyModule.callMutedPenalty })
     callMutedPenalty: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.callDeafPenalty })
+    @Column({ type: 'real', default: defaultEconomyModule.callDeafPenalty })
     callDeafPenalty: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.callCameraBonus })
+    @Column({ type: 'real', default: defaultEconomyModule.callCameraBonus })
     callCameraBonus: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.callStreamBonus })
+    @Column({ type: 'real', default: defaultEconomyModule.callStreamBonus })
     callStreamBonus: number;
     @Column({ type: 'int', default: defaultEconomyModule.callGainIntervalMinutes })
     callGainIntervalMinutes: number;
@@ -105,9 +105,9 @@ export class EconomyModule {
     // Rob
     @Column({ type: 'boolean', default: defaultEconomyModule.isRobEnabled })
     isRobEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultEconomyModule.robSuccessChance })
+    @Column({ type: 'real', default: defaultEconomyModule.robSuccessChance })
     robSuccessChance: number;
-    @Column({ type: 'numeric', default: defaultEconomyModule.robStealPercentage })
+    @Column({ type: 'real', default: defaultEconomyModule.robStealPercentage })
     robStealPercentage: number;
     @Column({ type: 'int', default: defaultEconomyModule.robCooldown })
     robCooldown: number;
@@ -123,7 +123,7 @@ export class EconomyModule {
     isGamblingEnabled: boolean;
 
     // Discount
-    @Column({ type: 'numeric', default: defaultEconomyModule.supporterPriceDiscount })
+    @Column({ type: 'real', default: defaultEconomyModule.supporterPriceDiscount })
     supporterPriceDiscount: number;
 
     @ManyToOne(() => Guild, { onDelete: 'CASCADE' })

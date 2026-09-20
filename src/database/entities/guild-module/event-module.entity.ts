@@ -32,13 +32,13 @@ export class EventModule {
     // Global
     @Column({ type: 'int', default: defaultEventModule.randomEventCooldown })
     randomEventCooldown: number;
-    @Column({ type: 'numeric', default: defaultEventModule.randomEventChance })
+    @Column({ type: 'real', default: defaultEventModule.randomEventChance })
     randomEventChance: number;
 
     // Guild Coins
     @Column({ type: 'boolean', default: defaultEventModule.isGuildCoinEventEnabled })
     isGuildCoinEventEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultEventModule.guildCoinsChance })
+    @Column({ type: 'real', default: defaultEventModule.guildCoinsChance })
     guildCoinsChance: number;
     @Column({ type: 'int', default: defaultEventModule.guildCoinsMinGain })
     guildCoinsMinGain: number;
@@ -48,7 +48,7 @@ export class EventModule {
     // Activity Xp
     @Column({ type: 'boolean', default: defaultEventModule.isActivityXpEventEnabled })
     isActivityXpEventEnabled: boolean;
-    @Column({ type: 'numeric', default: defaultEventModule.activityXpChance })
+    @Column({ type: 'real', default: defaultEventModule.activityXpChance })
     activityXpChance: number;
     @Column({ type: 'int', default: defaultEventModule.activityXpMinGain })
     activityXpMinGain: number;
