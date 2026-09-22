@@ -82,10 +82,10 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
                 name: '🌌 Portails',
                 value: [
                     `- 🏆 **Total terminé** ${whiteArrowEmoji} **${totalPortalCompleted}**`,
-                    `- 🔴 **Portails rouges terminés** ${whiteArrowEmoji} **${redPortalCompleted}**`,
-                    `- 🟢 **Portails verts terminés** ${whiteArrowEmoji} **${greenPortalCompleted}**`,
-                    `- 🔵 **Portails bleus terminés** ${whiteArrowEmoji} **${bluePortalCompleted}**`,
-                    `- 🟡 **Portails jaunes terminés** ${whiteArrowEmoji} **${yellowPortalCompleted}**`
+                    `- 🔥 **Portails rouges terminés** ${whiteArrowEmoji} **${redPortalCompleted}**`,
+                    `- 🌱 **Portails verts terminés** ${whiteArrowEmoji} **${greenPortalCompleted}**`,
+                    `- 💎 **Portails bleus terminés** ${whiteArrowEmoji} **${bluePortalCompleted}**`,
+                    `- 💰 **Portails jaunes terminés** ${whiteArrowEmoji} **${yellowPortalCompleted}**`
                 ].join('\n')
             }
         ],
