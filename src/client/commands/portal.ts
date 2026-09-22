@@ -137,7 +137,8 @@ export default new Command({
                 description: isCompleted
                     ? '> ✨ **Le portail est terminé !** Réclame tes récompenses !'
                     : '> Tu es actuellement à l’intérieur de ce portail',
-                fields
+                fields,
+                footer: { text: "Fin de l’exploration à la fin du temps imparti" }
             }
 
             const button = createButton('Terminé', {
@@ -168,14 +169,12 @@ export default new Command({
                         "**Aucun portail à l'horizon, profites-en pour te reposer !**",
                         '> *De nouveaux portails apparaîtront prochainement*'
                     ].join('\n'),
-                fields: portals.map((portal) => ({
+                fields: availablePortals.map((portal) => ({
                     name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
-                    value: (portal.userId ? [
-                        '- *Portail en cours..*'
-                    ] : [
+                    value: [
                         formatRewards(portal),
                         `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
-                    ]).filter(Boolean).join('\n'),
+                    ].filter(Boolean).join('\n'),
                     inline: false
                 }))
             }
@@ -220,7 +219,7 @@ export default new Command({
 
                 if (!portal) {
                     return await i.reply({
-                        content: 'On dirait bien que ce portail a disparu.'
+                        content: 'On dirait bien que ce portail a disparu..'
                     });
                 }
 

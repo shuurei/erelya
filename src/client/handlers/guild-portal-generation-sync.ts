@@ -52,9 +52,9 @@ const generatePortal = (guildId: string) => {
 
     return GuildPortalService.create(guildId, {
         type,
-        coinReward: coinReward ? Math.floor(coinReward * randomNumber(0.5, 1.5)) : null,
-        xpReward: xpReward ? Math.floor(xpReward * randomNumber(0.5, 1.5)) : null,
-        duration: Math.floor(duration * randomNumber(0.5, 2)),
+        coinReward: coinReward ? Math.floor(coinReward * randomNumber(0.5, 1.5, true)) : null,
+        xpReward: xpReward ? Math.floor(xpReward * randomNumber(0.5, 1.5, true)) : null,
+        duration: Math.floor(duration * randomNumber(0.5, 2, true)),
         ...stats,
     });
 }
