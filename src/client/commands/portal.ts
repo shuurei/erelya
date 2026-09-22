@@ -132,7 +132,7 @@ export default new Command({
             const payload = {
                 color: memberAvatarDominantColor,
                 thumbnail: { url: memberHelper.getAvatarURL() },
-                title: `#${portal.id} - ${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
+                title: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)} - #${portal.id}`,
                 description: isCompleted
                     ? '> ✨ **Le portail est terminé !** Réclame tes récompenses !'
                     : '> Tu es actuellement à l’intérieur de ce portail',
@@ -169,7 +169,7 @@ export default new Command({
                         '> *De nouveaux portails apparaîtront prochainement*'
                     ].join('\n'),
                 fields: availablePortals.map((portal) => ({
-                    name: `#${portal.id} - ${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
+                    name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)} - #${portal.id}`,
                     value: [
                         formatRewards(portal),
                         `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
