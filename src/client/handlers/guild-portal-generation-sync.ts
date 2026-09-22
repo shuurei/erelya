@@ -1,6 +1,7 @@
 import { PortalType } from '@/database/entities/guild-portals.entity'
 import { GuildPortalService } from '@/database/services/guild-portal.service'
 import { GuildService } from '@/database/services/guild.service'
+import { randomNumber } from '@/utils';
 import { In } from 'typeorm';
 
 const MAX_PORTALS = 6;
@@ -47,9 +48,15 @@ const getRandomGenerationInterval = () => {
 
 const generatePortal = (guildId: string) => {
     const type = generatePortalType();
-    const stats = PORTALS[type];
+    const { xpReward, coinReward, duration, ...stats } = PORTALS[type];
 
-    return GuildPortalService.create(guildId, { type, ...stats });
+    return GuildPortalService.create(guildId, {
+        type,
+        coinReward: coinReward ? Math.floor(coinReward * randomNumber(0.5, 1.5)) : null,
+        xpReward: xpReward ? Math.floor(xpReward * randomNumber(0.5, 1.5)) : null,
+        duration: Math.floor(duration * randomNumber(0.5, 2)),
+        ...stats,
+    });
 }
 
 const generatePortals = async (guildId: string) => {
