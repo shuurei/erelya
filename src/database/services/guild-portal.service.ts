@@ -1,5 +1,5 @@
 import { db } from '@/database/db'
-import { GuildPortal } from '../entities/guild-portals.entity'
+import { GuildPortal, PortalType } from '../entities/guild-portals.entity'
 import { GuildMemberService } from './guild-member.service'
 import { UserService } from './user.service'
 
@@ -68,13 +68,13 @@ export class GuildPortalService {
         return await this.update({ id }, { userId, startAt: new Date() });
     }
 
-    static async complete({ id }: GuildPortalWhere, userId: string) {
+    static async complete(id: number) {
         const portal = await this.findById({ id });
         if (!portal || !portal.userId) return;
 
         await Promise.all([
             this.repo.delete({ id }),
-            GuildMemberService.incrementPortalCompleted({ userId: portal.userId, guildId: portal.guildId })
+            GuildMemberService.incrementPortalCompleted({ userId: portal.userId, guildId: portal.guildId }, portal.type)
         ]);
     }
 }

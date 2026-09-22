@@ -77,8 +77,6 @@ export default new Command({
         const member = interaction.member
         const userId = member.user.id
 
-        await handleGuildPortalGeneration(guildId);
-
         const { whiteArrowEmoji } = applicationEmojiHelper();
 
         const memberHelper = await guildMemberHelper(member, { fetchAll: true });
@@ -199,6 +197,10 @@ export default new Command({
         }
 
         const activePortal = await getActivePortal();
+        if (!activePortal) {
+            await handleGuildPortalGeneration(guildId);
+        }
+
         const msg = await interaction.editReply(activePortal ? renderActivePortal(activePortal) : await renderPortalList());
 
         const collector = msg.createMessageComponentCollector({
@@ -248,6 +250,8 @@ export default new Command({
                     });
                 }
 
+                await GuildPortalService.complete(portal.id);
+
                 if (guildEcoModule?.isEnabled && portal.coinReward) {
                     await GuildMemberService.addCoins({ guildId, userId }, portal.coinReward);
                 }
@@ -259,8 +263,6 @@ export default new Command({
                         xpGain: portal.xpReward
                     });
                 }
-
-                await GuildPortalService.remove({ id: portal.id });
 
                 return await i.update(await renderPortalList());
             }
