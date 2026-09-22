@@ -12,7 +12,7 @@ export class GuildMember {
 
     @PrimaryColumn({ type: 'varchar' })
     guildId: string;
-    
+
     @Column({ type: 'integer', default: 0 })
     xp: number;
 
@@ -42,6 +42,9 @@ export class GuildMember {
 
     @Column({ type: 'int', default: 0 })
     callCameraMinutes: number;
+
+    @Column({ type: 'int', default: 0 })
+    portalCompleted: number;
 
     @Column({ type: 'int', default: 0 })
     dailyStreak: number;

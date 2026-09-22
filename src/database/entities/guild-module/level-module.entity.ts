@@ -21,6 +21,9 @@ export const defaultLevelModule = {
     callStreamBonus: 0.15,
     callGainIntervalMinutes: 15,
 
+    // Portal
+    isPortalEnabled: true,
+
     // Growth
     maxLevel: 100
 } as const;
@@ -60,6 +63,10 @@ export class LevelModule {
     callCameraBonus: number;
     @Column({ type: 'real', default: defaultLevelModule.callStreamBonus })
     callStreamBonus: number;
+
+    // Portal
+    @Column({ type: 'boolean', default: defaultLevelModule.isPortalEnabled })
+    isPortalEnabled: boolean;
 
     // Growth
     @Column({ type: 'int', default: defaultLevelModule.maxLevel })

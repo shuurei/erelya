@@ -74,4 +74,8 @@ export class GuildService {
     static async setLastEventAt(guildId: string, date: Date | null = new Date()) {
         return await this.createOrUpdate(guildId, { lastEventAt: date });
     }
+
+    static async setNextPortalGenerationAt(guildId: string, date: Date | null = new Date()) {
+        return await this.createOrUpdate(guildId, { nextPortalGenerationAt: date });
+    }
 }

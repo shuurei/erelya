@@ -13,13 +13,16 @@ export class Guild {
 
     @Column({ type: 'varchar', nullable: true })
     messageDeletedAuditChannelId: string | null;
-    
+
     @Column({ type: 'varchar', nullable: true })
     messageEditedAuditChannelId: string | null;
 
     @Column({ type: 'timestamp', nullable: true })
     lastEventAt: Date | null;
-    
+
+    @Column({ type: 'timestamp', nullable: true })
+    nextPortalGenerationAt: Date | null;
+
     @CreateDateColumn()
     createdAt: Date;
 }
