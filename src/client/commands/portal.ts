@@ -17,22 +17,21 @@ import { getDominantColor } from '@/utils'
 
 const getPortalEmoji = (type: PortalType) => {
     switch (type) {
-        case PortalType.GREEN: return '🟢'
-        case PortalType.YELLOW: return '🟡'
-        case PortalType.BLUE: return '🔵'
-        case PortalType.RED: return '🔴'
+        case PortalType.GREEN: return '🌱'
+        case PortalType.YELLOW: return '💰'
+        case PortalType.BLUE: return '💎'
+        case PortalType.RED: return '🔥'
     }
 }
 
 const getPortalName = (type: PortalType) => {
     switch (type) {
-        case PortalType.GREEN: return 'Portail vert'
-        case PortalType.YELLOW: return 'Portail jaune'
-        case PortalType.BLUE: return 'Portail bleu'
-        case PortalType.RED: return 'Portail rouge'
+        case PortalType.GREEN: return "Portail de Croissance"
+        case PortalType.YELLOW: return "Portail de Fortune"
+        case PortalType.BLUE: return "Portail de Richesse"
+        case PortalType.RED: return "Portail de Conquête"
     }
 }
-
 const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const remainingSecondsAfterHours = seconds % 3600;
@@ -133,7 +132,7 @@ export default new Command({
             const payload = {
                 color: memberAvatarDominantColor,
                 thumbnail: { url: memberHelper.getAvatarURL() },
-                title: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
+                title: `#${portal.id} - ${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
                 description: isCompleted
                     ? '> ✨ **Le portail est terminé !** Réclame tes récompenses !'
                     : '> Tu es actuellement à l’intérieur de ce portail',
