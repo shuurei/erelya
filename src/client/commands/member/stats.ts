@@ -46,7 +46,11 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
         callMutedMinutes = 0,
         callStreamingMinutes = 0,
         callCameraMinutes = 0,
-        portalCompleted = 0
+        totalPortalCompleted = 0,
+        redPortalCompleted = 0,
+        yellowPortalCompleted = 0,
+        bluePortalCompleted = 0,
+        greenPortalCompleted = 0
     } = memberDatabase ?? {};
 
     return EmbedUI.create({
@@ -77,7 +81,11 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
             {
                 name: '🌌 Portails',
                 value: [
-                    `- 🏆 **Terminé** ${whiteArrowEmoji} **${portalCompleted}**`
+                    `- 🏆 **Total terminé** ${whiteArrowEmoji} **${totalPortalCompleted}**`,
+                    `- 🔴 **Portails rouges terminés** ${whiteArrowEmoji} **${redPortalCompleted}**`,
+                    `- 🟢 **Portails verts terminés** ${whiteArrowEmoji} **${greenPortalCompleted}**`,
+                    `- 🔵 **Portails bleus terminés** ${whiteArrowEmoji} **${bluePortalCompleted}**`,
+                    `- 🟡 **Portails jaunes terminés** ${whiteArrowEmoji} **${yellowPortalCompleted}**`
                 ].join('\n')
             }
         ],

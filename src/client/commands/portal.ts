@@ -250,6 +250,8 @@ export default new Command({
                     });
                 }
 
+                await GuildPortalService.complete(portal.id);
+
                 if (guildEcoModule?.isEnabled && portal.coinReward) {
                     await GuildMemberService.addCoins({ guildId, userId }, portal.coinReward);
                 }
@@ -261,8 +263,6 @@ export default new Command({
                         xpGain: portal.xpReward
                     });
                 }
-
-                await GuildPortalService.remove({ id: portal.id });
 
                 return await i.update(await renderPortalList());
             }

@@ -5,6 +5,7 @@ import { GuildMember } from '../entities/guild-member.entity'
 
 import { UserService } from './user.service'
 import { GuildService } from './guild.service'
+import { PortalType } from '../entities/guild-portals.entity'
 
 interface MemberWhere {
     guildId: string;
@@ -177,8 +178,8 @@ export class GuildMemberService {
         return await this._updateNumberField(where, 'messageCount', amount);
     }
 
-    static async incrementPortalCompleted(where: MemberWhere, amount = 1) {
-        return await this._updateNumberField(where, 'portalCompleted', amount);
+    static async incrementPortalCompleted(where: MemberWhere, type: PortalType) {
+        return await this._updateNumberField(where, `${type}PortalCompleted`, 1);
     }
 
     static async incrementDailyStreak(where: MemberWhere) {
