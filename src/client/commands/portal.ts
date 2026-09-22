@@ -77,8 +77,6 @@ export default new Command({
         const member = interaction.member
         const userId = member.user.id
 
-        await handleGuildPortalGeneration(guildId);
-
         const { whiteArrowEmoji } = applicationEmojiHelper();
 
         const memberHelper = await guildMemberHelper(member, { fetchAll: true });
@@ -199,6 +197,10 @@ export default new Command({
         }
 
         const activePortal = await getActivePortal();
+        if (!activePortal) {
+            await handleGuildPortalGeneration(guildId);
+        }
+
         const msg = await interaction.editReply(activePortal ? renderActivePortal(activePortal) : await renderPortalList());
 
         const collector = msg.createMessageComponentCollector({
