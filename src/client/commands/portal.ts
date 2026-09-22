@@ -17,19 +17,19 @@ import { getDominantColor } from '@/utils'
 
 const getPortalEmoji = (type: PortalType) => {
     switch (type) {
-        case PortalType.GREEN: return '🌱'
-        case PortalType.YELLOW: return '💰'
-        case PortalType.BLUE: return '💎'
-        case PortalType.RED: return '🔥'
+        case PortalType.GREEN: return '🌱';
+        case PortalType.YELLOW: return '💰';
+        case PortalType.BLUE: return '🧭';
+        case PortalType.RED: return '🔥';
     }
 }
 
 const getPortalName = (type: PortalType) => {
     switch (type) {
-        case PortalType.GREEN: return "Portail de Croissance"
-        case PortalType.YELLOW: return "Portail de Fortune"
-        case PortalType.BLUE: return "Portail de Richesse"
-        case PortalType.RED: return "Portail de Conquête"
+        case PortalType.GREEN: return "Portail de Croissance";
+        case PortalType.YELLOW: return "Portail de Richesse";
+        case PortalType.BLUE: return "Portail d'Exploration";
+        case PortalType.RED: return "Portail de Conquête";
     }
 }
 const formatDuration = (seconds: number) => {
