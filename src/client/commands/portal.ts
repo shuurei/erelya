@@ -170,7 +170,7 @@ export default new Command({
                         '> *De nouveaux portails apparaîtront prochainement*'
                     ].join('\n'),
                 fields: availablePortals.map((portal) => ({
-                    name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
+                    name: `#${portal.id} - ${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
                     value: [
                         formatRewards(portal),
                         `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
@@ -181,7 +181,7 @@ export default new Command({
 
             const selectMenu = availablePortals.length > 0 ? createStringSelectMenu({
                 options: availablePortals.map(({ id, type, duration }) => ({
-                    label: getPortalName(type),
+                    label: `#${id} - ${getPortalName(type)}`,
                     description: `⏱️ Durée ${formatDuration(duration * 60)}`,
                     emoji: getPortalEmoji(type),
                     value: id.toString()
