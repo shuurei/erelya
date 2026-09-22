@@ -177,6 +177,10 @@ export class GuildMemberService {
         return await this._updateNumberField(where, 'messageCount', amount);
     }
 
+    static async incrementPortalCompleted(where: MemberWhere, amount = 1) {
+        return await this._updateNumberField(where, 'portalCompleted', amount);
+    }
+
     static async incrementDailyStreak(where: MemberWhere) {
         return await this._updateNumberField(where, 'dailyStreak', 1);
     }

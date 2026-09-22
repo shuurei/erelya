@@ -13,7 +13,7 @@ export const defaultEconomyModule = {
     messageChance: 0.3,
     messageMinGain: 8,
     messageMaxGain: 24,
-    
+
     // Call
     isGuildCoinsFromCallEnabled: true,
     callPrivatePenalty: 0.25,
@@ -24,26 +24,22 @@ export const defaultEconomyModule = {
     callGainIntervalMinutes: 15,
     callMinGain: 24,
     callMaxGain: 40,
-    
+
     // Work
     isWorkEnabled: true,
     workCooldown: 60,
     workMinGain: 200,
     workMaxGain: 500,
-    
-    // Rob
-    isRobEnabled: true,
-    robSuccessChance: 0.3,
-    robStealPercentage: 0.2,
-    robCooldown: 60 * 60,
-    robbedCooldown: 3 * 60 * 60,
-    
+
+    // Portal
+    isPortalEnabled: true,
+
     // Shop
     isShopEnabled: false,
-    
+
     // Gambling
     isGamblingEnabled: false,
-    
+
     // Discount
     supporterPriceDiscount: 0.3,
 } as const;
@@ -102,17 +98,9 @@ export class EconomyModule {
     @Column({ type: 'int', default: defaultEconomyModule.workMaxGain })
     workMaxGain: number;
 
-    // Rob
-    @Column({ type: 'boolean', default: defaultEconomyModule.isRobEnabled })
-    isRobEnabled: boolean;
-    @Column({ type: 'real', default: defaultEconomyModule.robSuccessChance })
-    robSuccessChance: number;
-    @Column({ type: 'real', default: defaultEconomyModule.robStealPercentage })
-    robStealPercentage: number;
-    @Column({ type: 'int', default: defaultEconomyModule.robCooldown })
-    robCooldown: number;
-    @Column({ type: 'int', default: defaultEconomyModule.robbedCooldown })
-    robbedCooldown: number;
+    // Portal
+    @Column({ type: 'boolean', default: defaultEconomyModule.isPortalEnabled })
+    isPortalEnabled: boolean;
 
     // Shop
     @Column({ type: 'boolean', default: defaultEconomyModule.isShopEnabled })
