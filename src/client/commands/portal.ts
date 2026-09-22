@@ -155,7 +155,7 @@ export default new Command({
 
         const renderPortalList = async () => {
             const portals = await GuildPortalService.findByGuild({ guildId });
-            const availablePortals = portals.filter((portal) => !portal.user);
+            const availablePortals = portals.filter((portal) => !portal.userId);
 
             const payload = {
                 color: memberAvatarDominantColor,
@@ -172,12 +172,12 @@ export default new Command({
                     ].join('\n'),
                 fields: portals.map((portal) => ({
                     name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)}`,
-                    value: [
+                    value: (portal.userId ? [
+                        '- *Portail en cours..*'
+                    ] : [
                         formatRewards(portal),
-                        portal.userId
-                            ? `- *Portail en cours*`
-                            : `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
-                    ].filter(Boolean).join('\n'),
+                        `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
+                    ]).filter(Boolean).join('\n'),
                     inline: false
                 }))
             }
@@ -198,7 +198,7 @@ export default new Command({
             } as const
         }
 
-        const activePortal = await getActivePortal()
+        const activePortal = await getActivePortal();
         const msg = await interaction.editReply(activePortal ? renderActivePortal(activePortal) : await renderPortalList());
 
         const collector = msg.createMessageComponentCollector({
