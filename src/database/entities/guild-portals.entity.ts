@@ -33,10 +33,10 @@ export class GuildPortal {
     @Column({ type: 'integer', default: null })
     coinReward: number | null;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'timestamptz', nullable: true })
     startAt: Date | null;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ type: 'timestamptz' })
     createdAt: Date;
 
     @ManyToOne(() => Guild, { onDelete: 'CASCADE' })
@@ -70,12 +70,19 @@ export class GuildPortal {
         return Math.ceil(remainingMs / 1000);
     }
 
+    get expiringTime() {
+        const elapsed = Date.now() - this.createdAt.getTime();
+        const durationMs = this.duration * 60 * 1000;
+
+        return Math.max(Math.ceil((durationMs - elapsed) / 1000), 0);
+    }
+
     get isExpired() {
-        if (!this.userId || !this.startAt || this.progress > 0) {
+        if (this.userId) {
             return false;
         }
 
-        return Date.now() >= (this.startAt.getTime() + this.duration * 1000);
+        return Date.now() >= (this.createdAt.getTime() + this.duration * 60 * 1000);
     }
 
     get isCompleted() {

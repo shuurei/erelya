@@ -186,8 +186,16 @@ export class GuildMemberService {
         return await this._updateNumberField(where, 'dailyStreak', 1);
     }
 
+    static async incrementPortalEntriesToday(where: MemberWhere) {
+        return await this._updateNumberField(where, 'portalEntriesToday', 1);
+    }
+
     static async resetDailyStreak(where: MemberWhere) {
         return await this._setNumberField(where, 'dailyStreak', 1);
+    }
+
+    static async resetportalEntriesToday(where: MemberWhere) {
+        return await this._setNumberField(where, 'portalEntriesToday', 0);
     }
 
     static async resetStats(where: MemberWhere) {
@@ -203,6 +211,10 @@ export class GuildMemberService {
     // -- Cooldowns --
     static async setLastAttendedAt(where: MemberWhere, date?: Date) {
         return await this._setCooldown(where, 'lastAttendedAt', date);
+    }
+
+    static async setLastPortalEntryAt(where: MemberWhere, date?: Date) {
+        return await this._setCooldown(where, 'lastPortalEntryAt', date);
     }
 
     static async setLastWorkedAt(where: MemberWhere, date?: Date) {
