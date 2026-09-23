@@ -56,7 +56,13 @@ export class GuildMember {
     bluePortalCompleted: number;
 
     @Column({ type: 'int', default: 0 })
+    portalEntriesToday: number;
+
+    @Column({ type: 'int', default: 0 })
     dailyStreak: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    lastPortalEntryAt: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })
     lastAttendedAt: Date | null;

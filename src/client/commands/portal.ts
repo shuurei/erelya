@@ -13,7 +13,10 @@ import { createProgressBar } from '@/ui/components'
 import { EmbedUI } from '@/ui'
 
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
-import { getDominantColor } from '@/utils'
+import { getDominantColor, tzMap } from '@/utils'
+import { DateTime } from 'luxon'
+
+const MAX_DAILY_PORTAL_ENTRIES = 3;
 
 const getPortalEmoji = (type: PortalType) => {
     switch (type) {
@@ -32,6 +35,7 @@ const getPortalName = (type: PortalType) => {
         case PortalType.RED: return "Portail de Conquête";
     }
 }
+
 const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const remainingSecondsAfterHours = seconds % 3600;
@@ -53,7 +57,7 @@ const formatDuration = (seconds: number) => {
         parts.push(`${remainingSeconds}s`);
     }
 
-    return parts.join(' ');
+    return parts.length > 0 ? parts.join(' ') : null;
 }
 
 export default new Command({
@@ -152,6 +156,8 @@ export default new Command({
         }
 
         const renderPortalList = async () => {
+            const { portalEntriesToday } = await GuildMemberService.findById({ userId, guildId }) ?? { portalEntriesToday: 0 };
+
             const portals = await GuildPortalService.findByGuild({ guildId });
             const availablePortals = portals.filter((portal) => !portal.userId);
 
@@ -172,10 +178,12 @@ export default new Command({
                     name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)} - #${portal.id}`,
                     value: [
                         formatRewards(portal),
+                        `- ⏳ Expiration ${whiteArrowEmoji} **${formatDuration(portal.expiringTime)}**`,
                         `- ⏱️ Durée ${whiteArrowEmoji} **${formatDuration(portal.duration * 60)}**`
                     ].filter(Boolean).join('\n'),
                     inline: false
-                }))
+                })),
+                footer: { text: `Limite quotidienne ${portalEntriesToday}/${MAX_DAILY_PORTAL_ENTRIES}` }
             }
 
             const selectMenu = availablePortals.length > 0 ? createStringSelectMenu({
@@ -190,7 +198,7 @@ export default new Command({
 
             return {
                 embeds: [EmbedUI.create(payload)],
-                components: selectMenu ? [createActionRow([selectMenu])] : []
+                components: selectMenu && portalEntriesToday < MAX_DAILY_PORTAL_ENTRIES ? [createActionRow([selectMenu])] : []
             } as const
         }
 
@@ -199,12 +207,25 @@ export default new Command({
             await handleGuildPortalGeneration(guildId);
         }
 
+        const { portalEntriesToday, lastPortalEntryAt } = await GuildMemberService.findById({ userId, guildId }) ?? { portalEntriesToday: 0, lastPortalEntryAt: null };
+
+        const guildLocale = member.guild.preferredLocale;
+        const guildTZ = tzMap[guildLocale] || 'UTC';
+
+        const now = DateTime.now().setZone(guildTZ);
+        const last = lastPortalEntryAt ? DateTime.fromJSDate(lastPortalEntryAt, { zone: guildTZ }) : null;
+        const isSameDay = last ? last.hasSame(now, 'day') : false;
+
+        if ((portalEntriesToday >= 0) && !isSameDay) {
+            await GuildMemberService.resetportalEntriesToday({ guildId, userId });
+        }
+
         const msg = await interaction.editReply(activePortal ? renderActivePortal(activePortal) : await renderPortalList());
 
         const collector = msg.createMessageComponentCollector({
             filter: ({ user }) => user.id === userId,
-            time: 30_000
-        })
+            time: 120_000
+        });
 
         collector.on('collect', async (i) => {
             if (i.isStringSelectMenu() && i.customId === 'portal:select') {
@@ -272,7 +293,7 @@ export default new Command({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'orange',
-                        description: '**30 secondes** se sont écoulées sans interaction 💡'
+                        description: '**2 minutes** se sont écoulées sans interaction 💡'
                     })
                 ],
                 components: []

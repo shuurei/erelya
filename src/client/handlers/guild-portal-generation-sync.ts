@@ -1,8 +1,10 @@
+import { In } from 'typeorm'
+
 import { PortalType } from '@/database/entities/guild-portals.entity'
 import { GuildPortalService } from '@/database/services/guild-portal.service'
 import { GuildService } from '@/database/services/guild.service'
-import { randomNumber } from '@/utils';
-import { In } from 'typeorm';
+
+import { randomNumber } from '@/utils'
 
 const MAX_PORTALS = 6;
 
@@ -61,7 +63,7 @@ const generatePortal = (guildId: string) => {
 
 const generatePortals = async (guildId: string) => {
     const portals = await GuildPortalService.findByGuild({ guildId });
-    const activePortals = portals.filter((portal) => !portal.isCompleted);
+    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired);
 
     const remaining = MAX_PORTALS - activePortals.length
     if (remaining <= 0) {
@@ -71,9 +73,7 @@ const generatePortals = async (guildId: string) => {
     const amount = Math.min(Math.floor(Math.random() * 5) + 2, remaining);
     const newPortals = await Promise.all(Array.from({ length: amount }, () => generatePortal(guildId)));
 
-    await GuildService.update(guildId, {
-        nextPortalGenerationAt: new Date(Date.now() + getRandomGenerationInterval())
-    });
+    await GuildService.setNextPortalGenerationAt(guildId, new Date(Date.now() + getRandomGenerationInterval()));
 
     return [
         ...activePortals,
@@ -87,7 +87,7 @@ export async function handleGuildPortalGeneration(guildId: string) {
 
     const expiredPortals = portals.filter((portal) => portal.isExpired);
     if (expiredPortals.length > 0) {
-        await GuildService.repo.delete({ id: In(expiredPortals.map(({ id }) => id)) });
+        await GuildPortalService.repo.delete({ id: In(expiredPortals.map(({ id }) => id)) });
     }
 
     const activePortals = portals.filter((portal) => !portal.isCompleted);

@@ -158,8 +158,8 @@ export default new Command({
             }
 
             await i.update({
-                embeds: [ EmbedUI.create(payload) ],
-                components: [ createActionRow([getClaimButton()]) ]
+                embeds: [EmbedUI.create(payload)],
+                components: [createActionRow([getClaimButton()])]
             });
 
             collector.stop();
