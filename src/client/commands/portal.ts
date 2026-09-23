@@ -287,17 +287,25 @@ export default new Command({
             }
         });
 
-        collector.on('end', async () => {
-            await interaction.editReply({
-                content: '',
-                embeds: [
-                    EmbedUI.createMessage({
-                        color: 'orange',
-                        description: '**2 minutes** se sont écoulées sans interaction 💡'
-                    })
-                ],
-                components: []
-            });
+        collector.on('end', async (_, reason) => {
+            if (reason !== 'time') return;
+
+            try {
+                await msg.edit({
+                    content: '',
+                    embeds: [
+                        EmbedUI.createMessage({
+                            color: 'orange',
+                            description: '**2 minutes** se sont écoulées sans interaction 💡'
+                        })
+                    ],
+                    components: []
+                });
+            } catch (error: any) {
+                if (error?.code === 10008) return;
+
+                throw error;
+            }
         });
     }
 })

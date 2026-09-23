@@ -43,8 +43,6 @@ export default new Command({
 
         const defaultModule = (GuildModules as any)[`default${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`];
 
-        console.log(defaultModule, moduleName)
-
         if (!(fieldName in defaultModule)) {
             return await message.reply({
                 embeds: [

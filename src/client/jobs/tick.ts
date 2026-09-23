@@ -103,11 +103,7 @@ new Cron('* * * * *', async () => {
                         cameraBoostFactor +
                         streamBoostFactor;
 
-                    const randomXP = Math.floor(
-                        randomNumber(minGain, maxGain) * (1 + bonusFactor) * (1 - penaltyFactor)
-                    );
-
-                    console.log(randomXP)
+                    const randomXP = Math.floor(randomNumber(minGain, maxGain) * (1 + bonusFactor) * (1 - penaltyFactor));
 
                     if (randomXP > 0) {
                         await handleMemberCheckLevelUp({
