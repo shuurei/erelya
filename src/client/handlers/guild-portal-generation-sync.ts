@@ -90,7 +90,7 @@ export async function handleGuildPortalGeneration(guildId: string) {
         await GuildPortalService.repo.delete({ id: In(expiredPortals.map(({ id }) => id)) });
     }
 
-    const activePortals = portals.filter((portal) => !portal.isCompleted);
+    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired);
     if (activePortals.length >= MAX_PORTALS) {
         return activePortals;
     }

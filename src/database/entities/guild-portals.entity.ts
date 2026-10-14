@@ -82,7 +82,7 @@ export class GuildPortal {
             return false;
         }
 
-        return Date.now() >= (this.createdAt.getTime() + this.duration * 60 * 1000);
+        return Date.now() >= (this.createdAt.getTime() + ((this.duration * 0.95) * 60 * 1000));
     }
 
     get isCompleted() {
