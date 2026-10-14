@@ -1,22 +1,13 @@
-import {
-    APIApplicationCommandBasicOption,
-    ChatInputCommandInteraction,
-    InteractionContextType,
-    LocalizationMap,
-    Message,
-    PermissionFlagsBits,
-    PermissionResolvable,
-    PermissionsBitField,
-    RESTPostAPIApplicationCommandsJSONBody
-} from 'discord.js'
-
+import { APIApplicationCommandBasicOption, ButtonInteraction, ChatInputCommandInteraction, InteractionContextType, LocalizationMap, Message, PermissionResolvable, PermissionsBitField, RESTPostAPIApplicationCommandsJSONBody } from 'discord.js'
 import client from '@/client/instance'
 import { BooleanKeys, GuildModuleEntity, GuildModuleName } from '@/database/services/guild-module.service';
+import { AsyncLocalStorage } from 'async_hooks'
+import { CustomClient } from '.'
 
 // --- Message Command ---
 export enum MessageCommandStyle {
     FLAT = 'flat',
-    SLASH_COMMAND = 'slashCommand',
+    SLASH_COMMAND = 'slashCommand'
 }
 
 export interface MessageCommandOptions {
@@ -70,6 +61,8 @@ export interface CommandOnMessageContext {
     args: (string | null)[];
 }
 
+export type CommandButtonInteraction = ButtonInteraction<'cached'>;
+
 export interface CommandOptions {
     nameLocalizations?: LocalizationMap;
     description?: string;
@@ -78,15 +71,8 @@ export interface CommandOptions {
     cooldown?: number;
     slashCommand?: SlashCommandOptions;
     messageCommand?: MessageCommandOptions;
-    onInteraction?: (
-        this: Command,
-        interaction: ChatInputCommandInteraction<'cached'>,
-    ) => any;
-    onMessage?: (
-        this: Command,
-        message: Message<true>,
-        ctx: CommandOnMessageContext
-    ) => any;
+    onInteraction?: (this: Command, interaction: ChatInputCommandInteraction<'cached'>) => any;
+    onMessage?: (this: Command, message: Message<true>, ctx: CommandOnMessageContext) => any;
 }
 
 export interface CommandStructure {
@@ -101,7 +87,11 @@ export interface CommandStructure {
     };
 }
 
+export const commandContext = new AsyncLocalStorage<Command>();
+
 export class Command {
+    client: CustomClient;
+
     nameLocalizations?: LocalizationMap;
     description?: string;
     descriptionLocalizations?: LocalizationMap;
@@ -112,10 +102,7 @@ export class Command {
 
     structure: CommandStructure;
 
-    client: typeof client;
-
     onInteraction?: (interaction: ChatInputCommandInteraction) => any;
-
     onMessage?: (message: Message, ctx?: CommandOnMessageContext) => any;
 
     constructor(options: CommandOptions) {
@@ -139,7 +126,7 @@ export class Command {
         const { message, interaction } = this.structure;
         return interaction?.subcommandName ?? interaction?.commandName ?? this.messageCommand?.name ?? message?.commandName ?? 'unknown';
     }
-    
+
     toAPI() {
         const data: RESTPostAPIApplicationCommandsJSONBody = {
             name: this.name,

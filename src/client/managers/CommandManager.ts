@@ -108,40 +108,40 @@ export class CommandManager {
                 const mod = (await import(pathToFileURL(`${cwd}/${filePath}`).href))?.default;
                 if (!(mod instanceof Command)) {
                     stats.invalid++
-    
+
                     logger.info(({ redBright, yellowBright }) => {
                         return redBright(`${yellowBright(`"${filePath}"`)} is not a ${yellowBright('Command')} instance`);
                     }, { arrowColor: 'redBright' });
-    
+
                     continue;
                 };
-    
+
                 const groupRegex = /^\(.+\)$/;
                 const parts = filePath
                     .replace(/\.(ts|js)$/, '')
                     .split('/')
                     .slice(1)
                     .filter((p) => !groupRegex.test(p));
-    
+
                 if (parts.length < 1) {
                     stats.invalid++
                     continue;
                 }
-    
+
                 let interactionStructure: Partial<CommandStructure['interaction']> = {};
                 let messageStructure: Partial<CommandStructure['message']> = {};
-    
+
                 let fileName = parts.pop() as string;
-    
+
                 const isIndexCommand = fileName.toLowerCase() === 'index';
-    
+
                 if (isIndexCommand && parts.length > 1) {
                     fileName = parts.pop() as string;
                 }
-    
+
                 if (mod.onInteraction) {
                     const lastParts = parts.slice(-2);
-    
+
                     if (lastParts.length === 2) {
                         interactionStructure = {
                             subcommandGroupName: lastParts[1],
@@ -156,24 +156,24 @@ export class CommandManager {
                     } else {
                         interactionStructure.commandName = fileName
                     }
-    
+
                     mod.structure.interaction = interactionStructure as CommandStructure['interaction'];
                 }
-    
+
                 if (mod.onMessage) {
                     messageStructure = {
                         commandName: fileName,
                         parts,
                     };
-    
+
                     mod.structure.message = messageStructure as CommandStructure['message'];
                 }
-    
+
                 stats.loaded++
                 this._commands.push(mod);
             }
         }
-        
+
         if (this._commands.length > 0) {
             logger.header(({ orange }) => orange('✦ COMMANDS ✦'));
 
@@ -218,7 +218,7 @@ export class CommandManager {
                         flags.push('⭐');
                     }
 
-                    const nameParts : (string | undefined | null)[] = [];
+                    const nameParts: (string | undefined | null)[] = [];
 
                     if (cmd.onMessage && cmd?.messageCommand?.style !== 'slashCommand') {
                         nameParts.push(cmd.name);
@@ -254,13 +254,13 @@ export class CommandManager {
                     return message.concat(` ${name}`);
                 });
             }
-    
+
             logger.separator();
-            
+
             if (stats.invalid) {
                 logger.info(({ redBright }) => `${redBright(stats.invalid)} invalid commands`, { arrowColor: 'redBright' });
             }
-    
+
             logger.info(({ greenBright }) => `${greenBright(stats.loaded)} commands loaded`, { arrowColor: 'greenBright' });
         } else {
             logger.info(({ redBright }) => redBright(`No client commands were detected to load`), { arrowColor: 'red' });
@@ -411,14 +411,14 @@ export class CommandManager {
                     restrictedSlashCommandsData: clearCommands,
                 });
             }
-            
+
             logger.info('Synchronization completed', { arrowColor: 'greenBright' });
         } catch (err) {
             logger.info(({ redBright }) => `${redBright('Synchronization failed:')} ${err}`, { arrowColor: 'red' });
         }
     }
 
-    resolveSlashCommand(options: CommandManagerResolveSlashCommandOptions): Command | undefined {
+    resolveSlashCommand(options: CommandManagerResolveSlashCommandOptions) {
         return this.slashCommands.find(({ structure }) => {
             if (!structure.interaction) return;
 

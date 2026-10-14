@@ -4,7 +4,7 @@ import { BaseMessageOptions, ChatInputCommandInteraction, Message, Team } from '
 import { UserService } from '@/database/services/user.service'
 
 import { createNotifCard } from '@/ui/assets/cards/notifCard'
-import { EmbedUI } from '@/ui' 
+import { EmbedUI } from '@/ui'
 
 import { logger } from '@/utils'
 import { GuildModuleName, GuildModuleService } from '@/database/services/guild-module.service'
@@ -134,18 +134,10 @@ export default new Event({
                 }
             }
 
-            if (
-                isSlash
-                && command.onInteraction
-                && interaction.inCachedGuild()
-            ) {
-                return await command.onInteraction(interaction);
-            } else if (
-                isMessage
-                && command.onMessage
-                && interaction.inGuild()
-            ) {
-                return await command.onMessage(interaction, { args });
+            if (isSlash && command.onInteraction && interaction.inCachedGuild()) {
+                return await command.onInteraction!(interaction);
+            } else if (isMessage && command.onMessage && interaction.inGuild()) {
+                return await command.onMessage!(interaction, { args });
             }
         } catch (err: any) {
             this.client.logger.error(err);

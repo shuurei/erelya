@@ -26,7 +26,7 @@ export class EventManager {
             valid: 0,
             invalid: 0
         }
-        
+
         const files = await fg(path, { cwd });
 
         if (files.length > 0) {
@@ -38,20 +38,20 @@ export class EventManager {
                     stats.invalid++;
                     continue
                 };
-    
+
                 const listenerType = mod.once ? 'once' : 'on';
-    
+
                 this.client[listenerType](mod.name, async (...args) => {
                     try {
                         const newThis = Object.assign(mod, { client: this.client });
                         return await mod.run.call(newThis, { events: args });
-                    } catch (ex) {
+                    } catch (ex: any) {
                         if (this.client.hub && this.client.hub?.heartLogsChannel) {
                             logger.error(ex);
-    
+
                             const potentialGuild = args[0]?.guild;
                             const potentialUser = args[0]?.user;
-    
+
                             await this.client.hub.heartLogsChannel.send({
                                 embeds: [
                                     EmbedUI.create({
@@ -77,17 +77,17 @@ export class EventManager {
                         }
                     }
                 });
-    
+
                 stats.valid++;
                 logger.log(({ custom }) => `⚡ ${custom('#fff383', mod.name.toCapitalize())}`);
             }
-    
+
             logger.separator();
-            
+
             if (stats.invalid) {
                 logger.info(({ redBright }) => `${redBright(stats.invalid)} invalid events`, { arrowColor: 'redBright' });
             }
-    
+
             logger.info(({ greenBright }) => `Listening ${greenBright(stats.valid)} events`, { arrowColor: 'greenBright' });
         } else {
             logger.info(({ redBright }) => redBright(`No client event were detected to load`), { arrowColor: 'red' });
