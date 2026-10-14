@@ -40,7 +40,7 @@ const parseBet = (input: string, coins: number): number | null => {
 const getWinChance = (amount: number): number => {
     const steps = Math.floor((amount - 1) / BET_STEP)
 
-    return Math.max(0.05, 0.5 - steps * 0.05)
+    return Math.max(0.3, 0.5 - steps * 0.027)
 }
 
 const handleCommand = async ({ amount: input, guildId, member }: {
