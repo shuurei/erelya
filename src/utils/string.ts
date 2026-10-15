@@ -77,3 +77,15 @@ export const formatTimeLeftFromMinutes = (
 export const isEmoji = (char: string) => {
     return /\p{Emoji_Presentation}/u.test(char)
 }
+
+export const formatMedalRank = (rank: number | string) => {
+    if (rank == 1) {
+        return '🥇';
+    } else if (rank == 2) {
+        return '🥈';
+    } else if (rank ==3) {
+        return '🥉';
+    } else {
+        return rank.toLocaleString('en');
+    }
+}
