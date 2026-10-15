@@ -16,7 +16,7 @@ import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, tzMap } from '@/utils'
 import { DateTime } from 'luxon'
 
-const MAX_DAILY_PORTAL_ENTRIES = 3;
+const MAX_DAILY_PORTAL_ENTRIES = 5;
 
 const getPortalEmoji = (type: PortalType) => {
     switch (type) {
