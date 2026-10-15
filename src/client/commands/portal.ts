@@ -156,6 +156,8 @@ export default new Command({
         }
 
         const renderPortalList = async () => {
+            await handleGuildPortalGeneration(guildId);
+
             const { portalEntriesToday } = await GuildMemberService.findById({ userId, guildId }) ?? { portalEntriesToday: 0 };
 
             const portals = await GuildPortalService.findByGuild({ guildId });
