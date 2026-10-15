@@ -7,7 +7,6 @@ import { GuildMemberService } from '@/database/services/guild-member.service'
 
 const MIN_BET = 100;
 const MAX_BET = 1_000_000;
-const BET_STEP = 100_000;
 
 const parseBet = (input: string, coins: number): number | null => {
     const value = input.trim().toLowerCase()
@@ -35,12 +34,6 @@ const parseBet = (input: string, coins: number): number | null => {
     }
 
     return amount
-}
-
-const getWinChance = (amount: number): number => {
-    const steps = Math.floor((amount - 1) / BET_STEP)
-
-    return Math.max(0.3, 0.5 - steps * 0.027)
 }
 
 const handleCommand = async ({ amount: input, guildId, member }: {
@@ -99,16 +92,14 @@ const handleCommand = async ({ amount: input, guildId, member }: {
         ]
     }
 
-    const winChance = getWinChance(amount);
-    const win = Math.random() < winChance;
-
+    const win = Math.random() < 0.5;
     if (win) {
         await GuildMemberService.addCoins({ guildId, userId: member.id }, amount);
 
         return [
             {
                 attachment: await createNotifCard({
-                    text: `[Vous avez doublé votre mise ! Vous avez gagné ${amount.toLocaleString('en')} pièces avec une chance de ${Math.round(winChance * 100)}%]`,
+                    text: `[Vous avez doublé votre mise ! Vous avez gagné ${amount.toLocaleString('en')} pièces.]`,
                     theme: 'green'
                 }),
                 name: 'success.png'
@@ -130,7 +121,7 @@ const handleCommand = async ({ amount: input, guildId, member }: {
     return [
         {
             attachment: await createNotifCard({
-                text: `[Vous avez perdu votre mise de ${amount.toLocaleString('en')} pièces avec une chance de ${Math.round(winChance * 100)}%]`,
+                text: `[Vous avez perdu votre mise de ${amount.toLocaleString('en')} pièces.]`,
                 theme: 'red'
             }),
             name: 'failure.png'
