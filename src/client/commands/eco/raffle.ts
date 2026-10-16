@@ -27,18 +27,35 @@ const buildPayload = async (member: GuildMember, amount?: number) => {
     if (amount) {
         const contributionWeek = DateTime.now().setZone('Europe/Paris').startOf('week').toISODate();
         const contributor = await RaffleContributorService.findById({ userId: member.id });
-        if (contributor && (contributor.contributionWeek.toString() == contributionWeek)) {
-            return {
-                files: [
-                    {
-                        attachment: await createNotifCard({
-                            text: `Vous avez déjà participer à la cagnotte cette semaine.`,
-                            theme: 'red'
-                        }),
-                        name: 'failure.png'
-                    }
-                ]
-            } as const;
+
+        if (contributor) {
+            if (contributor.guildId !== member.guild.id) {
+                return {
+                    files: [
+                        {
+                            attachment: await createNotifCard({
+                                text: `Vous ne pouvez participer à la cagnotte que depuis un seul serveur.`,
+                                theme: 'red'
+                            }),
+                            name: 'failure.png'
+                        }
+                    ]
+                } as const;
+            }
+
+            if (contributor.contributionWeek.toString() == contributionWeek) {
+                return {
+                    files: [
+                        {
+                            attachment: await createNotifCard({
+                                text: `Vous avez déjà participer à la cagnotte cette semaine.`,
+                                theme: 'red'
+                            }),
+                            name: 'failure.png'
+                        }
+                    ]
+                } as const;
+            }
         }
 
         if ((amount < MIN_BET || amount > MAX_BET)) {
