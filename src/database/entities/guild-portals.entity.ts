@@ -6,7 +6,8 @@ export enum PortalType {
     GREEN = 'green',
     YELLOW = 'yellow',
     BLUE = 'blue',
-    RED = 'red'
+    RED = 'red',
+    BLACK = 'black'
 }
 
 @Entity()

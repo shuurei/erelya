@@ -8,7 +8,6 @@ import { ContainerUI } from '@/ui'
 
 import { guildMemberHelper } from '@/helpers'
 import { getDominantColor, parseUserMention } from '@/utils'
-import { UserDatabaseFlags } from '@/utils/user-flags'
 
 const toDiscordTimestamp = (date?: number | Date | null) => {
     return date ? Math.floor(new Date(date).getTime() / 1000) : null;
@@ -82,16 +81,12 @@ const buildContainer = async (member: GuildMember) => {
         })
     );
 
-    if (member.user.bot || userDatabase?.flagsBitField?.any([ UserDatabaseFlags.TESTER ])) {
+    if (member.user.bot) {
         components.push(createSeparator());
 
         if (member.user.bot) {
             components.push(
                 createTextDisplay('-# *Cet utilisateur est un robot*')
-            );
-        } else if (userDatabase!.flagsBitField.has(UserDatabaseFlags.TESTER)) {
-            components.push(
-                createTextDisplay('-# *Cet utilisateur est bêta-testeur du bot*')
             );
         }
     }

@@ -14,6 +14,7 @@ import { EmbedUI } from '@/ui'
 
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, tzMap } from '@/utils'
+
 import { DateTime } from 'luxon'
 
 const MAX_DAILY_PORTAL_ENTRIES = 5;
@@ -24,6 +25,7 @@ const getPortalEmoji = (type: PortalType) => {
         case PortalType.YELLOW: return '💰';
         case PortalType.BLUE: return '🧭';
         case PortalType.RED: return '🔥';
+        case PortalType.BLACK: return '👻'
     }
 }
 
@@ -33,6 +35,7 @@ const getPortalName = (type: PortalType) => {
         case PortalType.YELLOW: return "Portail de Richesse";
         case PortalType.BLUE: return "Portail d'Exploration";
         case PortalType.RED: return "Portail de Conquête";
+        case PortalType.BLACK: return "Phasmo Portail";
     }
 }
 
@@ -93,12 +96,14 @@ export default new Command({
         const formatRewards = (portal: GuildPortal) => {
             const rewards = []
 
+            const isPhasmoPortal = portal.type === PortalType.BLACK;
+
             if (guildLevelModule?.isEnabled && portal.xpReward) {
-                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${portal.xpReward.toLocaleString('en')}**`);
+                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isPhasmoPortal ? '??' : portal.xpReward.toLocaleString('en')}**`);
             }
 
             if (guildEcoModule?.isEnabled && portal.coinReward) {
-                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${portal.coinReward.toLocaleString('en')}**`);
+                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isPhasmoPortal ? '??' : portal.coinReward.toLocaleString('en')}**`);
             }
 
             return rewards.join('\n');

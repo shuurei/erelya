@@ -12,6 +12,11 @@ const MIN_GENERATION_INTERVAL = 45 * 60 * 60 * 1000;
 const MAX_GENERATION_INTERVAL = 1.5 * 60 * 60 * 1000;
 
 const PORTALS = {
+    [PortalType.BLACK]: {
+        xpReward: 8000,
+        coinReward: 60000,
+        duration: 180
+    },
     [PortalType.GREEN]: {
         xpReward: 2500,
         coinReward: 0,
@@ -39,10 +44,11 @@ const PORTALS = {
 }>
 
 const generatePortalType = (): PortalType => {
-    const types = Object.values(PortalType);
+    const isOctober = new Date().getMonth() === 9;
+    const types = Object.values(PortalType).filter(type => isOctober || type !== PortalType.BLACK);
 
     return types[Math.floor(Math.random() * types.length)];
-}
+};
 
 const getRandomGenerationInterval = () => {
     return Math.floor(Math.random() * (MAX_GENERATION_INTERVAL - MIN_GENERATION_INTERVAL + 1)) + MIN_GENERATION_INTERVAL;

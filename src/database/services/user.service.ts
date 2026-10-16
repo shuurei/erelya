@@ -1,6 +1,5 @@
 import { db } from '../db'
 import { User } from '../entities/user.entity'
-import { UserDatabaseFlagsString } from '@/utils/user-flags'
 
 export class UserService {
     static get repo() {
@@ -51,26 +50,6 @@ export class UserService {
 
     static async delete(userId: string) {
         return await this.repo.delete({ id: userId });
-    }
-
-    // -- Flags --
-    static async addFlag(userId: string, flag: UserDatabaseFlagsString) {
-        const user = await this.findOrCreate(userId);
-
-        user.flags = user.flagsBitField.add(flag).bitfield;
-
-        return await this.repo.save(user);
-    }
-
-    static async removeFlag(userId: string, flag: UserDatabaseFlagsString) {
-        const user = await this.findById(userId);
-        if (!user) {
-            return null
-        }
-
-        user.flags = user.flagsBitField.remove(flag).bitfield;
-
-        return await this.repo.save(user);
     }
 
     // -- Tag --

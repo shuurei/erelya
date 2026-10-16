@@ -44,16 +44,10 @@ export class GuildMember {
     callCameraMinutes: number;
 
     @Column({ type: 'int', default: 0 })
-    redPortalCompleted: number;
+    coinflipWon: number;
 
     @Column({ type: 'int', default: 0 })
-    greenPortalCompleted: number;
-
-    @Column({ type: 'int', default: 0 })
-    yellowPortalCompleted: number;
-
-    @Column({ type: 'int', default: 0 })
-    bluePortalCompleted: number;
+    coinflipLost: number;
 
     @Column({ type: 'int', default: 0 })
     portalEntriesToday: number;
@@ -83,9 +77,5 @@ export class GuildMember {
 
     get level() {
         return xpToLevel(this.xp);
-    }
-
-    get totalPortalCompleted() {
-        return this.redPortalCompleted + this.bluePortalCompleted + this.yellowPortalCompleted + this.greenPortalCompleted;
     }
 }
