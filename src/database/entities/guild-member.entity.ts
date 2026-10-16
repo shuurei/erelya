@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn, Column } from 'typeorm'
+import { Entity, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn, Column, UpdateDateColumn } from 'typeorm'
 
 import { User } from './user.entity'
 import { Guild } from './guild.entity'
@@ -64,9 +64,6 @@ export class GuildMember {
     @Column({ type: 'timestamp', nullable: true })
     lastWorkedAt: Date | null;
 
-    @CreateDateColumn()
-    createdAt: Date;
-
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'userId' })
     user: User;
@@ -74,6 +71,12 @@ export class GuildMember {
     @ManyToOne(() => Guild, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'guildId' })
     guild: Guild;
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
 
     get level() {
         return xpToLevel(this.xp);
