@@ -7,6 +7,7 @@ export const jobsLogger = logger.use({
 export const startAllJobs = async () => {
     logger.info('Starting jobs..', { arrowColor: 'orangeBright' });
     await import('./tick.js');
+    await import('./raffle.js');
     logger.info('All jobs loaded', { arrowColor: 'greenBright' });
 }
 
