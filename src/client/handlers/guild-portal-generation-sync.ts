@@ -8,8 +8,8 @@ import { randomNumber } from '@/utils'
 
 const MAX_PORTALS = 5;
 
-const MIN_GENERATION_INTERVAL = 3 * 60 * 60 * 1000;
-const MAX_GENERATION_INTERVAL = 5 * 60 * 60 * 1000;
+const MIN_GENERATION_INTERVAL = 45 * 60 * 60 * 1000;
+const MAX_GENERATION_INTERVAL = 1.5 * 60 * 60 * 1000;
 
 const PORTALS = {
     [PortalType.GREEN]: {
