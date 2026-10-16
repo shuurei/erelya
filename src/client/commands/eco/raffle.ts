@@ -155,8 +155,9 @@ export default new Command({
     },
     async onInteraction(interaction) {
         await interaction.deferReply();
+        const amount = interaction.options.getInteger('amount');
 
-        return await interaction.editReply(await buildPayload(interaction.member));
+        return await interaction.editReply(await buildPayload(interaction.member, amount ?? undefined));
     },
     async onMessage(message, { args: [amount] }) {
         return await message.reply(await buildPayload(message.member!, amount ? Number(amount) : undefined));
