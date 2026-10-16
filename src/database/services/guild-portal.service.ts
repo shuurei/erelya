@@ -75,8 +75,7 @@ export class GuildPortalService {
         await Promise.all([
             this.repo.delete({ id }),
             GuildMemberService.setLastPortalEntryAt({ userId: portal.userId, guildId: portal.guildId }),
-            GuildMemberService.incrementPortalEntriesToday({ userId: portal.userId, guildId: portal.guildId }),
-            GuildMemberService.incrementPortalCompleted({ userId: portal.userId, guildId: portal.guildId }, portal.type)
+            GuildMemberService.incrementPortalEntriesToday({ userId: portal.userId, guildId: portal.guildId })
         ]);
     }
 }

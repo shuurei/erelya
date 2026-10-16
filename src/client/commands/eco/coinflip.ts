@@ -94,7 +94,10 @@ const handleCommand = async ({ amount: input, guildId, member }: {
 
     const win = Math.random() < 0.5;
     if (win) {
-        await GuildMemberService.addCoins({ guildId, userId: member.id }, amount);
+        await Promise.all([
+            GuildMemberService.addCoins({ guildId, userId: member.id }, amount),
+            GuildMemberService.incrementCoinflipWon({ guildId, userId: member.id })
+        ]);
 
         return [
             {
@@ -113,10 +116,10 @@ const handleCommand = async ({ amount: input, guildId, member }: {
         ]
     }
 
-    await GuildMemberService.removeCoins(
-        { guildId, userId: member.id },
-        amount
-    )
+    await Promise.all([
+        GuildMemberService.removeCoins({ guildId, userId: member.id }, amount),
+        GuildMemberService.incrementCoinflipLost({ guildId, userId: member.id })
+    ]);
 
     return [
         {

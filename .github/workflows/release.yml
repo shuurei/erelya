@@ -21,7 +21,7 @@ jobs:
       - name: Generate build info
         id: build
         run: |
-          echo "version=$(date -u +'%y.%m.%d')" >> "$GITHUB_OUTPUT"
+          echo "version=$(date -u +'%y.%-m.%-d')" >> "$GITHUB_OUTPUT"
           echo "number=$(date -u +'%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 

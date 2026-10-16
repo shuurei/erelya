@@ -1,11 +1,12 @@
 import { Command, CustomClient } from '@/structures'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
 
+import { GuildMemberService } from '@/database/services/guild-member.service'
+
 import { EmbedUI } from '@/ui'
 
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, parseUserMention } from '@/utils'
-import { GuildMemberService } from '@/database/services/guild-member.service'
 
 const formatTime = (minutes: number) => {
     if (!minutes) return '**0** min';
@@ -46,20 +47,15 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
         callMutedMinutes = 0,
         callStreamingMinutes = 0,
         callCameraMinutes = 0,
-        totalPortalCompleted = 0,
-        redPortalCompleted = 0,
-        yellowPortalCompleted = 0,
-        bluePortalCompleted = 0,
-        greenPortalCompleted = 0
+        coinflipWon = 0,
+        coinflipLost = 0
     } = memberDatabase ?? {};
 
     return EmbedUI.create({
         color: memberAvatarDominantColor,
         description: `> 💡 Voici un résumé de votre activité sur le serveur !`,
-        thumbnail: {
-            url: memberHelper.getAvatarURL()
-        },
-        title: `${memberHelper.getName({ safe: true })} — Serveur Stats`,
+        thumbnail: { url: memberHelper.getAvatarURL() },
+        title: `${memberHelper.getName({ safe: true })} - Serveur Stats`,
         fields: [
             {
                 name: '💬 Messages envoyés',
@@ -79,13 +75,10 @@ const buildEmbed = async (member: GuildMember, client: CustomClient) => {
                 ].join('\n')
             },
             {
-                name: '🌌 Portails',
+                name: '💰 Économie',
                 value: [
-                    `- 🏆 **Total terminé** ${whiteArrowEmoji} **${totalPortalCompleted}**`,
-                    `- 🔥 **Portails de Conquête terminés** ${whiteArrowEmoji} **${redPortalCompleted}**`,
-                    `- 🌱 **Portails de Croissance terminés** ${whiteArrowEmoji} **${greenPortalCompleted}**`,
-                    `- 🧭 **Portails d'Exploration terminés** ${whiteArrowEmoji} **${bluePortalCompleted}**`,
-                    `- 💰 **Portails de Richesse terminés** ${whiteArrowEmoji} **${yellowPortalCompleted}**`
+                    `- 📈 **Coinflip gagnés** ${whiteArrowEmoji} **${coinflipWon.toLocaleString('en')}**`,
+                    `- 📉 **Coinflip perdus** ${whiteArrowEmoji} **${coinflipLost.toLocaleString('en')}**`
                 ].join('\n')
             }
         ],

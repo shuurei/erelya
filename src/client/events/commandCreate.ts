@@ -8,7 +8,6 @@ import { EmbedUI } from '@/ui'
 
 import { logger } from '@/utils'
 import { GuildModuleName, GuildModuleService } from '@/database/services/guild-module.service'
-import { UserDatabaseFlags } from '@/utils/user-flags'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     try {
@@ -116,12 +115,6 @@ export default new Event({
                 if (access.user) {
                     if (access.user?.isDeveloper && !isDeveloper) {
                         return await replyAuthorizationRefused(`Autorisation insuffisante. Accès développeur requis.`);
-                    }
-
-                    if (userDatabase && !isDeveloper) {
-                        if (access.user?.isBetaTester && !userDatabase.flagsBitField.has(UserDatabaseFlags.TESTER)) {
-                            return await replyAuthorizationRefused(`Accès restreint. Statut tester requis.`);
-                        }
                     }
 
                     if (access.user?.isGuildOwner && user.id !== guild.ownerId) {

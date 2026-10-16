@@ -178,12 +178,16 @@ export class GuildMemberService {
         return await this._updateNumberField(where, 'messageCount', amount);
     }
 
-    static async incrementPortalCompleted(where: MemberWhere, type: PortalType) {
-        return await this._updateNumberField(where, `${type}PortalCompleted`, 1);
-    }
-
     static async incrementDailyStreak(where: MemberWhere) {
         return await this._updateNumberField(where, 'dailyStreak', 1);
+    }
+
+    static async incrementCoinflipWon(where: MemberWhere) {
+        return await this._updateNumberField(where, 'coinflipWon', 1);
+    }
+
+    static async incrementCoinflipLost(where: MemberWhere) {
+        return await this._updateNumberField(where, 'coinflipLost', 1);
     }
 
     static async incrementPortalEntriesToday(where: MemberWhere) {
