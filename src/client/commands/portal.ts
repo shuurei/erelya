@@ -96,14 +96,14 @@ export default new Command({
         const formatRewards = (portal: GuildPortal) => {
             const rewards = []
 
-            const isPhasmoPortal = portal.type === PortalType.BLACK;
+            const isSecret = (portal.type === PortalType.BLACK) && !portal.isCompleted;
 
             if (guildLevelModule?.isEnabled && portal.xpReward) {
-                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isPhasmoPortal ? '??' : portal.xpReward.toLocaleString('en')}**`);
+                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isSecret ? '??' : portal.xpReward.toLocaleString('en')}**`);
             }
 
             if (guildEcoModule?.isEnabled && portal.coinReward) {
-                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isPhasmoPortal ? '??' : portal.coinReward.toLocaleString('en')}**`);
+                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isSecret ? '??' : portal.coinReward.toLocaleString('en')}**`);
             }
 
             return rewards.join('\n');
@@ -298,16 +298,7 @@ export default new Command({
             if (reason !== 'time') return;
 
             try {
-                await msg.edit({
-                    content: '',
-                    embeds: [
-                        EmbedUI.createMessage({
-                            color: 'orange',
-                            description: '**2 minutes** se sont écoulées sans interaction 💡'
-                        })
-                    ],
-                    components: []
-                });
+                await msg.delete();
             } catch (error: any) {
                 if (error?.code === 10008) return;
 
