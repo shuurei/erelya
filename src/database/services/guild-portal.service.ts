@@ -2,6 +2,7 @@ import { db } from '@/database/db'
 import { GuildPortal, PortalType } from '../entities/guild-portals.entity'
 import { GuildMemberService } from './guild-member.service'
 import { UserService } from './user.service'
+import { DateTime } from 'luxon'
 
 export interface GuildPortalWhere {
     id: number
@@ -70,10 +71,13 @@ export class GuildPortalService {
 
     static async complete(id: number) {
         const portal = await this.findById({ id });
-        if (!portal || !portal.userId) return;
+        if (!portal) return;
+
+        await this.repo.delete({ id });
+
+        if (!portal.userId || !portal.startAt || DateTime.fromJSDate(portal.startAt).hasSame(DateTime.now(), 'day')) return;
 
         await Promise.all([
-            this.repo.delete({ id }),
             GuildMemberService.setLastPortalEntryAt({ userId: portal.userId, guildId: portal.guildId }),
             GuildMemberService.incrementPortalEntriesToday({ userId: portal.userId, guildId: portal.guildId })
         ]);
