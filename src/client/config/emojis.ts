@@ -13,12 +13,7 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'online'
     | 'idle'
     | 'dnd'
-    | 'lightGraySubEntry'
-    | 'redSubEntry'
-    | 'greenSubEntry'
     | 'lightGrayBullet'
-    | 'yellowSubEntry'
-    | 'graySubEntry'
     | 'yellowBullet'
     | 'redBullet'
     | 'blueBullet'
@@ -28,10 +23,15 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'yellowRect'
     | 'redRect'
     | 'indogoRect'
-    | 'empty'
-    | 'abyssMarked'
-    | 'abyssUnmarked'
-    | 'abyssLine';
+    | 'unknownRank'
+    | 'ERank'
+    | 'DRank'
+    | 'CRank'
+    | 'BRank'
+    | 'ARank'
+    | 'SRank'
+    | 'NRank'
+    | 'XRank'
 
 export type ArrowColorName = 'red'
     | 'green'
@@ -42,7 +42,7 @@ export type ArrowColorName = 'red'
     | 'white'
     | 'pink';
 
-export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
+export const applicationEmojiDev: Record<ApplicationEmojiName, string> = {
     voiceChannel: '1366513582199541800',
     stageChannel: '1366513562784366723',
     textChannel: '1366513550956167189',
@@ -57,12 +57,6 @@ export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     whiteArrow: '1373466902801809478',
     pinkArrow: '1373466950726062141',
 
-    graySubEntry: '1412969509047894137',
-    yellowSubEntry: '1412969535136468992',
-    lightGraySubEntry: '1412972355080290334',
-    redSubEntry: '1412972290240544868',
-    greenSubEntry: '1412972394016018432',
-
     blueBullet: '1418433617238950038',
     greenBullet: '1412969556682739926',
     yellowBullet: '1412969569076904046',
@@ -75,18 +69,22 @@ export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     greenRect: '1423334822482546801',
     indogoRect: '1423335752284115155',
 
-    empty: '1412970747907014656',
-
     online: '1366512708853174343',
     idle: '1366512718399537232',
     dnd: '1366512728239509504',
 
-    abyssMarked: '1447983820250021888',
-    abyssUnmarked: '1447983183663595562',
-    abyssLine: '1447984625359130685'
+    unknownRank: '1560931083732656178',
+    ERank: '1560931080469479444',
+    DRank: '1560931079026909234',
+    CRank: '1560931077441191998',
+    BRank: '1560931075856011284',
+    ARank: '1560931073913790554',
+    SRank: '1560931084961714266',
+    NRank: '1560931082201993336',
+    XRank: '1560931086274666507'
 }
 
-export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
+export const applicationEmojiProd: Record<ApplicationEmojiName, string> = {
     voiceChannel: '1342655444484886650',
     stageChannel: '1342655729055826041',
     textChannel: '1342655488348655626',
@@ -101,12 +99,6 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     whiteArrow: '1385819618735816824',
     pinkArrow: '1385819789209112618',
 
-    graySubEntry: '1423306275915300864',
-    yellowSubEntry: '1423306341190996030',
-    lightGraySubEntry: '1423306399026516018',
-    redSubEntry: '1423306471822725152',
-    greenSubEntry: '1423306524117434408',
-
     blueBullet: '1423305990958223482',
     greenBullet: '1423306041751371916',
     yellowBullet: '1423306085636374530',
@@ -118,16 +110,19 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     redRect: '1423361587154260238',
     greenRect: '1423361602073264341',
     indogoRect: '1423361570502738071',
-
-    empty: '1423305833587933307',
-
     online: '1342979602468962487',
     idle: '1342979785835544576',
     dnd: '1342979809713848412',
 
-    abyssMarked: '',
-    abyssUnmarked: '',
-    abyssLine: ''
+    unknownRank: '1560932642793201705',
+    ERank: '1560932639832150017',
+    DRank: '1560932637911285840',
+    CRank: '1560932636351004713',
+    BRank: '1560932634710773761',
+    ARank: '1560932633356144731',
+    SRank: '1560932644701737081',
+    NRank: '1560932641543426139',
+    XRank: '1560932646073139242'
 } as const
 
 export const currentApplicationEmoji = process.env.ENV === 'DEV'
