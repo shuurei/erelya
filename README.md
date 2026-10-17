@@ -12,9 +12,9 @@
 : :: ::    :   : :  : :: ::   : :: : :     :      :   : :
     </pre>
 	<p>
-        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/shuurei/discord-erelya-bot?include_prereleases&sort=date&display_name=tag&style=flat&label=version&color=6886ff">
-        <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/shuurei/discord-erelya-bot?logo=github">
-        <img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/shuurei/discord-erelya-bot?logo=github">
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/shuurei/erelya?include_prereleases&sort=date&display_name=tag&style=flat&label=version&color=6886ff">
+        <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/shuurei/erelya?logo=github">
+        <img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/shuurei/erelya?logo=github">
 	</p>
 </div>
 
