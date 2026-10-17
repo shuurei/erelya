@@ -69,7 +69,7 @@ const generatePortal = (guildId: string) => {
 
 const generatePortals = async (guildId: string) => {
     const portals = await GuildPortalService.findByGuild({ guildId });
-    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired);
+    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired && !portal.userId);
 
     const remaining = MAX_PORTALS - activePortals.length
     if (remaining <= 0) {
@@ -96,7 +96,7 @@ export async function handleGuildPortalGeneration(guildId: string) {
         await GuildPortalService.repo.delete({ id: In(expiredPortals.map(({ id }) => id)) });
     }
 
-    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired);
+    const activePortals = portals.filter((portal) => !portal.isCompleted && !portal.isExpired && !portal.userId);
     if (activePortals.length >= MAX_PORTALS) {
         return activePortals;
     }
