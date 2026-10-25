@@ -32,6 +32,7 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'SRank'
     | 'NRank'
     | 'XRank'
+    | 'loading'
 
 export type ArrowColorName = 'red'
     | 'green'
@@ -81,7 +82,9 @@ export const applicationEmojiDev: Record<ApplicationEmojiName, string> = {
     ARank: '1560931073913790554',
     SRank: '1560931084961714266',
     NRank: '1560931082201993336',
-    XRank: '1560931086274666507'
+    XRank: '1560931086274666507',
+
+    loading: '1563895204732338249'
 }
 
 export const applicationEmojiProd: Record<ApplicationEmojiName, string> = {
@@ -122,7 +125,9 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string> = {
     ARank: '1560932633356144731',
     SRank: '1560932644701737081',
     NRank: '1560932641543426139',
-    XRank: '1560932646073139242'
+    XRank: '1560932646073139242',
+
+    loading: '',
 } as const
 
 export const currentApplicationEmoji = process.env.ENV === 'DEV'

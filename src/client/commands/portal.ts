@@ -17,7 +17,19 @@ import { getDominantColor, tzMap } from '@/utils'
 
 import { DateTime } from 'luxon'
 
-const MAX_DAILY_PORTAL_ENTRIES = 5;
+export const MAX_DAILY_PORTAL_ENTRIES = 5;
+
+const loadContainer = async () => {
+    const { loadingEmoji } = await applicationEmojiHelper({ fetch: true });
+
+    return {
+        embeds: [EmbedUI.createMessage({
+            color: 'blue',
+            description: `${loadingEmoji} | *Traintement en cours..*`
+        })],
+        components: []
+    } as const;
+}
 
 const getPortalEmoji = (type: PortalType) => {
     switch (type) {
@@ -266,31 +278,37 @@ export default new Command({
                 return await i.update(renderActivePortal(assignedPortal));
             }
 
-            if (i.isButton() && i.customId.startsWith('portal:complete:')) {
-                const portalId = +i.customId.split(':')[2];
-                const portal = await GuildPortalService.findById({ id: portalId });
+            try {
+                if (i.isButton() && i.customId.startsWith('portal:complete:')) {
+                    await i.update(await loadContainer());
 
-                if (!portal || portal.userId !== userId) {
-                    return await i.reply({
-                        content: 'Ce portail a disparu',
-                    });
+                    const portalId = +i.customId.split(':')[2];
+                    const portal = await GuildPortalService.findById({ id: portalId });
+
+                    if (!portal || portal.userId !== userId) {
+                        return await i.reply({
+                            content: 'Ce portail a disparu',
+                        });
+                    }
+
+                    await GuildPortalService.complete(portal.id);
+
+                    if (guildEcoModule?.isEnabled && portal.coinReward) {
+                        await GuildMemberService.addCoins({ guildId, userId }, portal.coinReward);
+                    }
+
+                    if (guildLevelModule?.isEnabled && portal.xpReward) {
+                        await handleMemberCheckLevelUp({
+                            member,
+                            channel: interaction.channel,
+                            xpGain: portal.xpReward
+                        });
+                    }
+
+                    return await i.editReply(await renderPortalList());
                 }
-
-                await GuildPortalService.complete(portal.id);
-
-                if (guildEcoModule?.isEnabled && portal.coinReward) {
-                    await GuildMemberService.addCoins({ guildId, userId }, portal.coinReward);
-                }
-
-                if (guildLevelModule?.isEnabled && portal.xpReward) {
-                    await handleMemberCheckLevelUp({
-                        member,
-                        channel: interaction.channel,
-                        xpGain: portal.xpReward
-                    });
-                }
-
-                return await i.update(await renderPortalList());
+            } catch (err) {
+                throw new Error('Claiming portal rewards error', { cause: err });
             }
         });
 

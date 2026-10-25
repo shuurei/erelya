@@ -75,7 +75,7 @@ export class GuildPortalService {
 
         await this.repo.delete({ id });
 
-        if (!portal.userId || !portal.startAt || DateTime.fromJSDate(portal.startAt).hasSame(DateTime.now(), 'day')) return;
+        if (!portal.userId || !portal.startAt || !DateTime.fromJSDate(portal.startAt).hasSame(DateTime.now(), 'day')) return;
 
         await Promise.all([
             GuildMemberService.setLastPortalEntryAt({ userId: portal.userId, guildId: portal.guildId }),
