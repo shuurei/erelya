@@ -136,19 +136,13 @@ export const getPortalRewards = (rank: PortalRank, expectedDuration: number) => 
 }
 
 const generatePortalStats = (rank: PortalRank) => {
+    const isStatsHidden = Math.random() < 0.03;
+
     if (rank === PortalRank.N || rank === PortalRank.S || rank === PortalRank.A) {
         return {
             hasCoinReward: true,
             hasXpReward: true,
-            isStatsHidden: false
-        }
-    }
-
-    if (Math.random() < 0.03) {
-        return {
-            hasCoinReward: false,
-            hasXpReward: false,
-            isStatsHidden: true
+            isStatsHidden
         }
     }
 
@@ -157,7 +151,7 @@ const generatePortalStats = (rank: PortalRank) => {
         return {
             hasCoinReward: true,
             hasXpReward: false,
-            isStatsHidden: false
+            isStatsHidden
         }
     }
 
@@ -165,14 +159,14 @@ const generatePortalStats = (rank: PortalRank) => {
         return {
             hasCoinReward: false,
             hasXpReward: true,
-            isStatsHidden: false
+            isStatsHidden
         }
     }
 
     return {
         hasCoinReward: true,
         hasXpReward: true,
-        isStatsHidden: false
+        isStatsHidden
     }
 }
 
