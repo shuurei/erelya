@@ -12,25 +12,25 @@ const MAX_GENERATION_INTERVAL = 1.5 * 60 * 60 * 1000;
 const RANK_CONFIG = {
     [PortalRank.E]: {
         chance: 35,
-        baseDuration: 20,
+        baseDuration: 30,
         durationVariation: 0.2,
         rewardMultiplier: 0.6
     },
     [PortalRank.D]: {
         chance: 25,
-        baseDuration: 30,
+        baseDuration: 45,
         durationVariation: 0.2,
         rewardMultiplier: 0.8
     },
     [PortalRank.C]: {
         chance: 18,
-        baseDuration: 45,
+        baseDuration: 60,
         durationVariation: 0.2,
         rewardMultiplier: 1
     },
     [PortalRank.B]: {
         chance: 12,
-        baseDuration: 60,
+        baseDuration: 75,
         durationVariation: 0.2,
         rewardMultiplier: 1.4
     },
@@ -66,27 +66,27 @@ const RANK_REWARDS = {
     },
     [PortalRank.D]: {
         xp: 1000,
-        coins: 10_000
+        coins: 7500
     },
     [PortalRank.C]: {
         xp: 1250,
-        coins: 20_000
+        coins: 10000
     },
     [PortalRank.B]: {
         xp: 2750,
-        coins: 40_000
+        coins: 12500
     },
     [PortalRank.A]: {
         xp: 3500,
-        coins: 60_000
+        coins: 15000
     },
     [PortalRank.S]: {
         xp: 5000,
-        coins: 80_000
+        coins: 17500
     },
     [PortalRank.N]: {
         xp: 6000,
-        coins: 100_000
+        coins: 20000
     },
 } satisfies Record<PortalRank, {
     xp: number;
@@ -119,7 +119,7 @@ export const generatePortalDuration = (rank: PortalRank): number => {
 }
 
 
-export const getPortalRewards = (rank: PortalRank, expectedDuration: number) => {
+export const getPortalRewards = (rank: PortalRank, expectedDuration: number, isSpecial = false) => {
     if (!Number.isFinite(expectedDuration) || expectedDuration < 0) {
         throw new RangeError('expectedDuration must be postive number or null');
     }
@@ -128,10 +128,11 @@ export const getPortalRewards = (rank: PortalRank, expectedDuration: number) => 
     const baseRewards = RANK_REWARDS[rank];
 
     const durationMultiplier = expectedDuration / config.baseDuration;
+    const specialBonus = isSpecial ? 1.5 : 1;
 
     return {
-        xpReward: Math.floor(baseRewards.xp * config.rewardMultiplier * durationMultiplier),
-        coinReward: Math.floor(baseRewards.coins * config.rewardMultiplier * durationMultiplier)
+        xpReward: Math.floor((baseRewards.xp * config.rewardMultiplier * durationMultiplier) * specialBonus),
+        coinReward: Math.floor((baseRewards.coins * config.rewardMultiplier * durationMultiplier) * specialBonus)
     }
 }
 
