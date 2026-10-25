@@ -61,31 +61,31 @@ const RANK_CONFIG = {
 
 const RANK_REWARDS = {
     [PortalRank.E]: {
-        xp: 4_000,
+        xp: 750,
         coins: 5_000
     },
     [PortalRank.D]: {
-        xp: 6_000,
+        xp: 1000,
         coins: 10_000
     },
     [PortalRank.C]: {
-        xp: 8_500,
+        xp: 1250,
         coins: 20_000
     },
     [PortalRank.B]: {
-        xp: 10_000,
+        xp: 2750,
         coins: 40_000
     },
     [PortalRank.A]: {
-        xp: 12_000,
+        xp: 3500,
         coins: 60_000
     },
     [PortalRank.S]: {
-        xp: 14_000,
+        xp: 5000,
         coins: 80_000
     },
     [PortalRank.N]: {
-        xp: 16_000,
+        xp: 6000,
         coins: 100_000
     },
 } satisfies Record<PortalRank, {
