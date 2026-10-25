@@ -115,7 +115,7 @@ export default new Command({
             const rewards = []
 
             const isSecret = portal.type === PortalType.BLACK && !portal.isCompleted
-            const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration)
+            const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration, portal.isStatsHidden)
 
             if (guildLevelModule?.isEnabled && portal.hasXpReward) {
                 rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isSecret ? '??' : xpReward.toLocaleString('en')}**`);
@@ -305,7 +305,7 @@ export default new Command({
                         });
                     }
 
-                    const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration);
+                    const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration, portal.isStatsHidden);
                     await GuildPortalService.complete(portal.id);
 
                     if (guildEcoModule?.isEnabled && portal.hasCoinReward) {
