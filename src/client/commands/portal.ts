@@ -3,9 +3,9 @@ import { Command } from '@/structures/Command'
 import { GuildMemberService } from '@/database/services/guild-member.service'
 import { GuildModuleService } from '@/database/services/guild-module.service'
 import { GuildPortalService } from '@/database/services/guild-portal.service'
-import { GuildPortal, PortalType } from '@/database/entities/guild-portals.entity'
+import { GuildPortal, PortalRank, PortalType } from '@/database/entities/guild-portals.entity'
 
-import { handleGuildPortalGeneration } from '../handlers/guild-portal-generation-sync'
+import { getPortalRewards, handleGuildPortalGeneration } from '../handlers/guild-portal-generation-sync'
 import { handleMemberCheckLevelUp } from '../handlers/member-check-level-up'
 
 import { createActionRow, createButton, createStringSelectMenu } from '@/ui/components/common'
@@ -17,26 +17,44 @@ import { getDominantColor, tzMap } from '@/utils'
 
 import { DateTime } from 'luxon'
 
-const MAX_DAILY_PORTAL_ENTRIES = 5;
+export const MAX_DAILY_PORTAL_ENTRIES = 5;
 
-const getPortalEmoji = (type: PortalType) => {
-    switch (type) {
-        case PortalType.GREEN: return '🌱';
-        case PortalType.YELLOW: return '💰';
-        case PortalType.BLUE: return '🧭';
-        case PortalType.RED: return '🔥';
-        case PortalType.BLACK: return '👻'
-    }
+const loadContainer = async () => {
+    const { loadingEmoji } = await applicationEmojiHelper({ fetch: true });
+
+    return {
+        embeds: [EmbedUI.createMessage({
+            color: 'blue',
+            description: `${loadingEmoji} | *Traintement en cours..*`
+        })],
+        components: []
+    } as const;
 }
 
-const getPortalName = (type: PortalType) => {
+const getPortalName = (type: PortalType | undefined) => {
     switch (type) {
         case PortalType.GREEN: return "Portail de Croissance";
         case PortalType.YELLOW: return "Portail de Richesse";
         case PortalType.BLUE: return "Portail d'Exploration";
         case PortalType.RED: return "Portail de Conquête";
-        case PortalType.BLACK: return "Phasmo Portail";
+        case PortalType.BLACK: return "Phasmo-Portail";
+        case PortalType.PURPLE: return "Portail vers un autre monde";
+        default: return "??"
     }
+}
+
+const getPortalRank = () => {
+    const { NRankEmoji, SRankEmoji, ARankEmoji, BRankEmoji, CRankEmoji, DRankEmoji, ERankEmoji } = applicationEmojiHelper();
+
+    return {
+        [PortalRank.N]: NRankEmoji,
+        [PortalRank.S]: SRankEmoji,
+        [PortalRank.A]: ARankEmoji,
+        [PortalRank.B]: BRankEmoji,
+        [PortalRank.C]: CRankEmoji,
+        [PortalRank.D]: DRankEmoji,
+        [PortalRank.E]: ERankEmoji
+    } as const;
 }
 
 const formatDuration = (seconds: number) => {
@@ -96,17 +114,18 @@ export default new Command({
         const formatRewards = (portal: GuildPortal) => {
             const rewards = []
 
-            const isSecret = (portal.type === PortalType.BLACK) && !portal.isCompleted;
+            const isSecret = portal.type === PortalType.BLACK && !portal.isCompleted
+            const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration)
 
-            if (guildLevelModule?.isEnabled && portal.xpReward) {
-                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isSecret ? '??' : portal.xpReward.toLocaleString('en')}**`);
+            if (guildLevelModule?.isEnabled && portal.hasXpReward) {
+                rewards.push(`- 🧪 XP ${whiteArrowEmoji} **${isSecret ? '??' : xpReward.toLocaleString('en')}**`);
             }
 
-            if (guildEcoModule?.isEnabled && portal.coinReward) {
-                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isSecret ? '??' : portal.coinReward.toLocaleString('en')}**`);
+            if (guildEcoModule?.isEnabled && portal.hasCoinReward) {
+                rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isSecret ? '??' : coinReward.toLocaleString('en')}**`);
             }
 
-            return rewards.join('\n');
+            return rewards.length > 0 ? rewards.join('\n') : '*Aucune récompense disponible*'
         }
 
         const getActivePortal = async () => {
@@ -128,7 +147,7 @@ export default new Command({
 
                 {
                     name: 'Temps restant',
-                    value: portal.remainingTime <= 0 ? 'Aucun' : `⏱️ **${formatDuration(portal.remainingTime)}**`,
+                    value: portal.remainingTime <= 0 ? 'Terminé' : `⏱️ **${formatDuration(portal.remainingTime)}**`,
                     inline: true
                 },
                 {
@@ -141,7 +160,7 @@ export default new Command({
             const payload = {
                 color: memberAvatarDominantColor,
                 thumbnail: { url: memberHelper.getAvatarURL() },
-                title: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)} - #${portal.id}`,
+                title: `${getPortalRank()[portal.rank]} ${getPortalName(portal.type)} - #${portal.id}`,
                 description: isCompleted
                     ? '> ✨ **Le portail est terminé !** Réclame tes récompenses !'
                     : '> Tu es actuellement à l’intérieur de ce portail',
@@ -182,7 +201,7 @@ export default new Command({
                         '> *De nouveaux portails apparaîtront prochainement*'
                     ].join('\n'),
                 fields: availablePortals.map((portal) => ({
-                    name: `${getPortalEmoji(portal.type)} ${getPortalName(portal.type)} - #${portal.id}`,
+                    name: `${getPortalRank()[portal.rank]} ${getPortalName(portal.type)} - #${portal.id}`,
                     value: [
                         formatRewards(portal),
                         `- ⏳ Expiration ${whiteArrowEmoji} **${formatDuration(portal.expiringTime)}**`,
@@ -194,12 +213,19 @@ export default new Command({
             }
 
             const selectMenu = availablePortals.length > 0 ? createStringSelectMenu({
-                options: availablePortals.map(({ id, type, duration }) => ({
-                    label: `#${id} - ${getPortalName(type)}`,
-                    description: `⏱️ Durée ${formatDuration(duration * 60)}`,
-                    emoji: getPortalEmoji(type),
-                    value: id.toString()
-                })),
+                options: availablePortals.map(({ id, rank, type, duration }) => {
+                    const rankEmoji = getPortalRank()[rank];
+
+                    return {
+                        label: `#${id} - ${getPortalName(type)}`,
+                        description: `⏱️ Durée ${formatDuration(duration * 60)}`,
+                        emoji: {
+                            id: rankEmoji?.id,
+                            name: rankEmoji?.name
+                        },
+                        value: id.toString()
+                    }
+                }),
                 customId: 'portal:select'
             }) : null
 
@@ -266,31 +292,38 @@ export default new Command({
                 return await i.update(renderActivePortal(assignedPortal));
             }
 
-            if (i.isButton() && i.customId.startsWith('portal:complete:')) {
-                const portalId = +i.customId.split(':')[2];
-                const portal = await GuildPortalService.findById({ id: portalId });
+            try {
+                if (i.isButton() && i.customId.startsWith('portal:complete:')) {
+                    await i.update(await loadContainer());
 
-                if (!portal || portal.userId !== userId) {
-                    return await i.reply({
-                        content: 'Ce portail a disparu',
-                    });
+                    const portalId = +i.customId.split(':')[2];
+                    const portal = await GuildPortalService.findById({ id: portalId });
+
+                    if (!portal || portal.userId !== userId) {
+                        return await i.reply({
+                            content: 'Ce portail a disparu',
+                        });
+                    }
+
+                    const { xpReward, coinReward } = getPortalRewards(portal.rank, portal.duration);
+                    await GuildPortalService.complete(portal.id);
+
+                    if (guildEcoModule?.isEnabled && portal.hasCoinReward) {
+                        await GuildMemberService.addCoins({ guildId, userId }, coinReward);
+                    }
+
+                    if (guildLevelModule?.isEnabled && portal.hasXpReward) {
+                        await handleMemberCheckLevelUp({
+                            member,
+                            channel: interaction.channel,
+                            xpGain: xpReward
+                        });
+                    }
+
+                    return await i.editReply(await renderPortalList());
                 }
-
-                await GuildPortalService.complete(portal.id);
-
-                if (guildEcoModule?.isEnabled && portal.coinReward) {
-                    await GuildMemberService.addCoins({ guildId, userId }, portal.coinReward);
-                }
-
-                if (guildLevelModule?.isEnabled && portal.xpReward) {
-                    await handleMemberCheckLevelUp({
-                        member,
-                        channel: interaction.channel,
-                        xpGain: portal.xpReward
-                    });
-                }
-
-                return await i.update(await renderPortalList());
+            } catch (err) {
+                throw new Error('Claiming portal rewards error', { cause: err });
             }
         });
 

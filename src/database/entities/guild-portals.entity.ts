@@ -2,12 +2,23 @@ import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, Primary
 import { Guild } from './guild.entity'
 import { User } from './user.entity'
 
+export enum PortalRank {
+    N = 'N',
+    S = 'S',
+    A = 'A',
+    B = 'B',
+    C = 'C',
+    D = 'D',
+    E = 'E'
+}
+
 export enum PortalType {
-    GREEN = 'green',
-    YELLOW = 'yellow',
-    BLUE = 'blue',
-    RED = 'red',
-    BLACK = 'black'
+    GREEN = 'GREEN',
+    YELLOW = 'YELLOW',
+    BLUE = 'BLUE',
+    RED = 'RED',
+    BLACK = 'BLACK',
+    PURPLE = 'PURPLE'
 }
 
 @Entity()
@@ -19,20 +30,23 @@ export class GuildPortal {
     @Column({ type: 'varchar' })
     guildId: string;
 
-    @Column({ type: 'enum', enum: PortalType })
-    type: PortalType;
-
     @Column({ type: 'varchar', nullable: true })
     userId: string | null;
+
+    @Column({ type: 'enum', enum: PortalRank })
+    rank: PortalRank;
 
     @Column({ type: 'integer' })
     duration: number;
 
-    @Column({ type: 'integer', default: null })
-    xpReward: number | null;
+    @Column({ type: 'bool' })
+    hasCoinReward: boolean;
 
-    @Column({ type: 'integer', default: null })
-    coinReward: number | null;
+    @Column({ type: 'bool' })
+    hasXpReward: boolean;
+
+    @Column({ type: 'bool', default: false })
+    isStatsHidden: boolean;
 
     @Column({ type: 'timestamptz', nullable: true })
     startAt: Date | null;
@@ -47,6 +61,24 @@ export class GuildPortal {
     @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: true })
     @JoinColumn({ name: 'userId' })
     user: User | null;
+
+    get type() {
+        if (this.isStatsHidden) {
+            return PortalType.BLACK;
+        } else if (this.hasCoinReward && this.hasXpReward) {
+            if (this.duration > 720) {
+                return PortalType.PURPLE;
+            } else if (this.duration > 90) {
+                return PortalType.RED;
+            } else {
+                return PortalType.BLUE;
+            }
+        } else if (this.hasCoinReward) {
+            return PortalType.YELLOW;
+        } else if (this.hasXpReward) {
+            return PortalType.GREEN;
+        }
+    }
 
     get progress() {
         if (!this.userId || !this.startAt) {
