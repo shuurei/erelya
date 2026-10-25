@@ -61,31 +61,31 @@ const RANK_CONFIG = {
 
 const RANK_REWARDS = {
     [PortalRank.E]: {
-        xp: 4_000,
+        xp: 750,
         coins: 5_000
     },
     [PortalRank.D]: {
-        xp: 6_000,
+        xp: 1000,
         coins: 10_000
     },
     [PortalRank.C]: {
-        xp: 8_500,
+        xp: 1250,
         coins: 20_000
     },
     [PortalRank.B]: {
-        xp: 10_000,
+        xp: 2750,
         coins: 40_000
     },
     [PortalRank.A]: {
-        xp: 12_000,
+        xp: 3500,
         coins: 60_000
     },
     [PortalRank.S]: {
-        xp: 14_000,
+        xp: 5000,
         coins: 80_000
     },
     [PortalRank.N]: {
-        xp: 16_000,
+        xp: 6000,
         coins: 100_000
     },
 } satisfies Record<PortalRank, {
@@ -136,19 +136,13 @@ export const getPortalRewards = (rank: PortalRank, expectedDuration: number) => 
 }
 
 const generatePortalStats = (rank: PortalRank) => {
+    const isStatsHidden = Math.random() < 0.03;
+
     if (rank === PortalRank.N || rank === PortalRank.S || rank === PortalRank.A) {
         return {
             hasCoinReward: true,
             hasXpReward: true,
-            isStatsHidden: false
-        }
-    }
-
-    if (Math.random() < 0.03) {
-        return {
-            hasCoinReward: false,
-            hasXpReward: false,
-            isStatsHidden: true
+            isStatsHidden
         }
     }
 
@@ -157,7 +151,7 @@ const generatePortalStats = (rank: PortalRank) => {
         return {
             hasCoinReward: true,
             hasXpReward: false,
-            isStatsHidden: false
+            isStatsHidden
         }
     }
 
@@ -165,14 +159,14 @@ const generatePortalStats = (rank: PortalRank) => {
         return {
             hasCoinReward: false,
             hasXpReward: true,
-            isStatsHidden: false
+            isStatsHidden
         }
     }
 
     return {
         hasCoinReward: true,
         hasXpReward: true,
-        isStatsHidden: false
+        isStatsHidden
     }
 }
 

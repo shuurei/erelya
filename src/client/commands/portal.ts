@@ -125,7 +125,7 @@ export default new Command({
                 rewards.push(`- :coin: Pièces de serveur ${whiteArrowEmoji} **${isSecret ? '??' : coinReward.toLocaleString('en')}**`);
             }
 
-            return rewards.length > 0 ? rewards.join('\n') : '*Aucune récompense disponible*'
+            return rewards.join('\n')
         }
 
         const getActivePortal = async () => {
