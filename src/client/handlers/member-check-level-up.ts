@@ -13,19 +13,15 @@ const isAtMaxLevel = (maxLevel?: number, level?: number) => {
         : false
 }
 
-export async function handleMemberCheckLevelUp({
-    member,
-    channel,
-    xpGain,
-}: {
+export async function handleMemberCheckLevelUp({ member, channel, xpGain }: {
     member: GuildMember | undefined;
     channel?: Channel | null;
-    xpGain: number
+    xpGain: number;
 }) {
-    if (!member) return;
+    if (!member || xpGain <= 0) return
 
-    const guildId = member.guild.id
-    const userId = member.user.id
+    const guildId = member.guild.id;
+    const userId = member.user.id;
 
     const [
         memberDatabase,
@@ -39,56 +35,91 @@ export async function handleMemberCheckLevelUp({
 
     if (!guildLevelModule?.isEnabled) return
 
-    const currentLevel = memberDatabase?.level ?? 1;
-    const currentXp = memberDatabase?.xp ?? 0;
+    const maxLevel = guildLevelModule.maxLevel;
+    const isPrestigeEnabled = guildLevelModule.isPrestigeEnabled;
 
-    if (isAtMaxLevel(guildLevelModule.maxLevel, currentLevel)) return
+    const currentXp = memberDatabase?.xp ?? 0;
+    const currentLevel = memberDatabase?.totalLevel ?? xpToLevel(currentXp);
+
+    if (!isPrestigeEnabled && isAtMaxLevel(maxLevel, currentLevel)) return
 
     const nextXp = currentXp + xpGain;
-    const newLevel = xpToLevel(nextXp);
+    const calculatedLevel = xpToLevel(nextXp);
 
-    const reachMaxLevel = isAtMaxLevel(guildLevelModule.maxLevel, newLevel);
+    const newLevel = isPrestigeEnabled
+        ? calculatedLevel
+        : Math.min(calculatedLevel, maxLevel);
+
+    const reachMaxLevel = !isPrestigeEnabled && isAtMaxLevel(maxLevel, newLevel);
 
     if (reachMaxLevel) {
-        const xpMaxLevel = levelToXp(guildLevelModule.maxLevel);
-        await GuildMemberService.setXp({ userId, guildId }, xpMaxLevel);
+        await GuildMemberService.setXp({ userId, guildId }, levelToXp(maxLevel));
     } else {
         await GuildMemberService.addXp({ userId, guildId }, xpGain);
     }
 
     if (newLevel <= currentLevel) return
 
+    const getProgression = (totalLevel: number) => {
+        if (!isPrestigeEnabled) {
+            return {
+                prestige: 0,
+                level: totalLevel
+            }
+        }
+
+        return {
+            prestige: Math.max(0, Math.floor((totalLevel - 1) / maxLevel)),
+            level: ((totalLevel - 1) % maxLevel) + 1
+        }
+    }
+
+    const previousProgression = getProgression(currentLevel);
+    const newProgression = getProgression(newLevel);
+
+    const prestigeChanged = isPrestigeEnabled && newProgression.prestige > previousProgression.prestige
+
     const rewards = await handleMemberRoleRewardSync({
         guild: member.guild,
         member,
-        activityLevel: newLevel
+        activityLevel: isPrestigeEnabled ? newProgression.level : newLevel
     });
 
-    if (!(channel && channel.isSendable())) return;
+    if (!channel?.isSendable()) return
 
     const memberHelper = guildMemberHelperSync(member);
-    const displayLevel = reachMaxLevel ? 'MAX' : newLevel;
 
-    const messageLines: string[] = [
-        `Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`
-    ];
+    const displayLevel = reachMaxLevel
+        ? 'MAX'
+        : isPrestigeEnabled
+            ? `P${newProgression.prestige} · ${newProgression.level}`
+            : newLevel.toLocaleString('fr-FR');
 
-    if (rewards.roleIds.length) {
+    const messageLines: string[] = []
+
+    if (prestigeChanged) {
         messageLines.push(
-            `> 🏅 ${rewards.roleIds.length === 1 ? 'Nouveau rôle débloqué' : 'Nouveaux rôles débloqués'} :`
+            `Prestige **${previousProgression.prestige}** ➔ **${newProgression.prestige}** !`,
+            `Nv. **${previousProgression.level}** ➔ Nv. **${newProgression.level}** 🎉`
         );
-
-        rewards.roleIds.forEach(roleId =>
-            messageLines.push(`> - <@&${roleId}>`)
-        );
+    } else if (isPrestigeEnabled) {
+        messageLines.push(`Prestige **${newProgression.prestige}** · Nv. **${previousProgression.level}** ➔ **${newProgression.level}** 🎉`);
+    } else {
+        messageLines.push(`Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`);
     }
 
-    if (guildEcoModule?.isEnabled && rewards?.totalGuildPoints > 0) {
+    if (rewards.roleIds.length) {
+        messageLines.push(`> 🏅 ${rewards.roleIds.length === 1 ? 'Nouveau rôle débloqué' : 'Nouveaux rôles débloqués'} :`);
+
+        rewards.roleIds.forEach((roleId) => {
+            messageLines.push(`> - <@&${roleId}>`)
+        });
+    }
+
+    if (guildEcoModule?.isEnabled && rewards.totalGuildPoints > 0) {
         await GuildMemberService.addCoins({ guildId, userId }, rewards.totalGuildPoints);
 
-        messageLines.push(
-            `> 💰 Gain de pièces : **${rewards.totalGuildPoints.toLocaleString('en')}**`
-        );
+        messageLines.push(`> 💰 Gain de pièces : **${rewards.totalGuildPoints.toLocaleString('fr-FR')}**`);
     }
 
     return await channel.send({
@@ -103,13 +134,11 @@ export async function handleMemberCheckLevelUp({
                 attachment: await levelUpCard({
                     username: memberHelper.getName({ safe: true }),
                     avatarURL: memberHelper.getAvatarURL(),
-                    accentColor:
-                        member.roles.color?.hexColor ??
-                        await getDominantColor(memberHelper.getAvatarURL(), { returnRGB: false }),
+                    accentColor: member.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), { returnRGB: false }),
                     newLevel: displayLevel
                 }),
                 name: 'levelUpCard.png'
             }
         ]
-    });
+    })
 }

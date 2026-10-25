@@ -78,7 +78,15 @@ export class GuildMember {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    get level() {
+    get totalLevel() {
         return xpToLevel(this.xp);
+    }
+
+    get prestige() {
+        return Math.floor(this.totalLevel / 80);
+    }
+
+    get level() {
+        return this.totalLevel - (this.prestige * 80);
     }
 }

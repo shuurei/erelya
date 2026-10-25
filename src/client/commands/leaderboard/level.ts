@@ -40,13 +40,13 @@ const buildEmbed = async (member: GuildMember) => {
 
             return [
                 `- ${place} ${isAuthor ? `**\`${name}\`**` : `\`${name}\``}`,
-                `**↳** Nv. **${r.level}**`,
+                `**↳** Nv. **${r.totalLevel}**`,
                 `**↳** **${r.xp.toLocaleString('en')}** XP`
             ].join('\n');
         }).join('\n');
 
     const leaderboardIndex = rankers.findIndex(r => r.userId === userId);
-    const totalLevels = rankers.reduce((sum, r) => sum + r.level, 0);
+    const totalLevels = rankers.reduce((sum, r) => sum + r.totalLevel, 0);
 
     const guildIcon = guild.iconURL();
     const guildIconDominantColor = guildIcon ? await getDominantColor(guildIcon) : undefined;
@@ -63,7 +63,7 @@ const buildEmbed = async (member: GuildMember) => {
             top,
             leaderboardIndex >= 10 ? [
                 `- **..${leaderboardIndex + 1} \`${memberHelper.getName()}**\``,
-                `**↳** Nv. **${rankers[leaderboardIndex].level}**`,
+                `**↳** Nv. **${rankers[leaderboardIndex].totalLevel}**`,
                 `**↳** **${rankers[leaderboardIndex].xp.toLocaleString('en')}** XP`
             ].join('\n') : ''
         ].join('\n'),
