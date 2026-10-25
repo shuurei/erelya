@@ -11,19 +11,19 @@ const MAX_GENERATION_INTERVAL = 1.5 * 60 * 60 * 1000;
 
 const RANK_CONFIG = {
     [PortalRank.E]: {
-        chance: 35,
+        chance: 25,
         baseDuration: 30,
         durationVariation: 0.2,
         rewardMultiplier: 0.6
     },
     [PortalRank.D]: {
-        chance: 25,
+        chance: 30,
         baseDuration: 45,
         durationVariation: 0.2,
         rewardMultiplier: 0.8
     },
     [PortalRank.C]: {
-        chance: 18,
+        chance: 14,
         baseDuration: 60,
         durationVariation: 0.2,
         rewardMultiplier: 1
@@ -137,7 +137,11 @@ export const getPortalRewards = (rank: PortalRank, expectedDuration: number, isS
 }
 
 const generatePortalStats = (rank: PortalRank) => {
-    const isStatsHidden = Math.random() < 0.03;
+    const now = new Date();
+    const isEvening = now.getHours() >= 20;
+
+    const chance = isEvening ? 0.4 : 0.25;
+    const isStatsHidden = Math.random() < chance;
 
     if (rank === PortalRank.N || rank === PortalRank.S || rank === PortalRank.A) {
         return {
