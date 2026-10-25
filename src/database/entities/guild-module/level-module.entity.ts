@@ -25,7 +25,8 @@ export const defaultLevelModule = {
     isPortalEnabled: true,
 
     // Growth
-    maxLevel: 100
+    maxLevel: 100,
+    isPrestigeEnabled: false
 } as const;
 
 @Entity()
@@ -71,6 +72,8 @@ export class LevelModule {
     // Growth
     @Column({ type: 'int', default: defaultLevelModule.maxLevel })
     maxLevel: number;
+    @Column({ type: 'boolean', default: defaultLevelModule.isPrestigeEnabled })
+    isPrestigeEnabled: boolean;
 
     @ManyToOne(() => Guild, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'guildId' })

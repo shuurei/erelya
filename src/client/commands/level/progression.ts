@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
+import { ApplicationCommandOptionType, bold, GuildMember } from 'discord.js'
 import { Command } from '@/structures'
 
 import { createProgressBar } from '@/ui/components'
@@ -27,7 +27,7 @@ const buildPayload = async (member: GuildMember) => {
     const guild = member.guild;
     const guildId = guild.id;
 
-    const [memberDatabase, leaderboard, { maxLevel }] = await Promise.all([
+    const [memberDatabase, leaderboard, { maxLevel, isPrestigeEnabled }] = await Promise.all([
         GuildMemberService.findOrCreate({ guildId, userId }),
         GuildMemberService.getActivityXpRank({ guildId, userId }),
         GuildModuleService.findOrCreate(guildId, 'level'),
@@ -40,16 +40,26 @@ const buildPayload = async (member: GuildMember) => {
     const isLastLevel = nextLevel >= maxLevel;
     const maxLevelReached = currentLevel >= maxLevel;
 
-    const fields = [
-        {
+    const fields = [];
+
+    if (isPrestigeEnabled && memberDatabase.prestige) {
+        fields.push({
+            name: `Prestige ${memberDatabase.prestige}`,
+            value: maxLevelReached
+                ? `**Nv. ${maxLevel}**`
+                : `**Nv. ${currentLevel.toLocaleString('en')}** ➜ **Nv. ${isLastLevel ? 'MAX' : nextLevel.toLocaleString('en')}**`,
+            inline: true
+        });
+    } else {
+        fields.push({
             name: maxLevelReached ? 'Niveau max' : 'Niveau',
             value: maxLevelReached
                 ? `**${maxLevel}**`
                 : `**${currentLevel.toLocaleString('en')}** ➜ **${isLastLevel ? 'MAX' : nextLevel.toLocaleString('en')}**`,
             inline: true
-        },
-    ];
-
+        });
+    }
+    
     if (maxLevelReached) {
         fields.push({
             name: "Total d'XP",
@@ -80,7 +90,7 @@ const buildPayload = async (member: GuildMember) => {
     if (!maxLevelReached) {
         fields.push({
             name: "Total d'XP",
-            value: currentXp.toLocaleString('en'),
+            value: `**${currentXp.toLocaleString('en')}**`,
             inline: false
         });
     }
