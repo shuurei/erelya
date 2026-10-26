@@ -475,7 +475,7 @@ export default new Command({
                         const tagBoostPercent = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * tagRolePriceDiscount
 
                         if (tagBoostPercent > 0.1) {
-                            item.cost = item.cost * (1 - tagBoostPercent);
+                            item.cost = Math.floor(item.cost * (1 - tagBoostPercent));
                         }
                     }
 

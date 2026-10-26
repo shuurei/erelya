@@ -16,6 +16,7 @@ import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, tzMap } from '@/utils'
 
 import { DateTime } from 'luxon'
+import { MessageFlags } from 'discord.js'
 
 export const MAX_DAILY_PORTAL_ENTRIES = 5;
 
@@ -94,7 +95,7 @@ export default new Command({
         }
     },
     async onInteraction(interaction) {
-        await interaction.deferReply()
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
         const guild = interaction.guild
         const guildId = guild.id
