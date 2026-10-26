@@ -12,9 +12,8 @@ import { ContainerUI } from '@/ui'
 import { guildMemberHelper } from '@/helpers'
 import { formatTimeLeft } from '@/utils'
 
-const MIN_BET = 5000;
-const MAX_BET = 50000;
-const MIN_PARTICIPANTS = 5;
+const MIN_PARTICIPANTS = 3;
+const MIN_BET = 7_500;
 
 const getNextDraw = () => {
     const now = DateTime.now().setZone('Europe/Paris');
@@ -58,12 +57,12 @@ const buildPayload = async (member: GuildMember, amount?: number) => {
             }
         }
 
-        if ((amount < MIN_BET || amount > MAX_BET)) {
+        if (amount != MIN_BET) {
             return {
                 files: [
                     {
                         attachment: await createNotifCard({
-                            text: `Ta mise doit être comprise entre ${MIN_BET.toLocaleString('en')} et ${MAX_BET.toLocaleString('en')} pièces.`,
+                            text: `Ta mise doit être de ${MIN_BET.toLocaleString('en')} pièces.`,
                             theme: 'red'
                         }),
                         name: 'failure.png'
@@ -117,7 +116,7 @@ const buildPayload = async (member: GuildMember, amount?: number) => {
                         accessory: createThumbnail({ url: memberHelper.getAvatarURL() }),
                         components: [
                             createTextDisplay('## 🎟️ Cagnotte'),
-                            createTextDisplay(`*Participe avec une mise de **${MIN_BET.toLocaleString('en')}** à **${MAX_BET.toLocaleString('en')} pièces**. Chaque participant dispose d’une chance égale de gagner, quel que soit le montant investi*`)
+                            createTextDisplay(`*Participe avec une mise de **${MIN_BET.toLocaleString('en')}** pièces**.`)
                         ]
                     }),
                     createTextDisplay([
@@ -150,12 +149,10 @@ export default new Command({
             {
                 type: ApplicationCommandOptionType.Integer,
                 name: 'amount',
-                description: `Amount to bet between ${MIN_BET} and ${MAX_BET}`,
+                description: `Amount to bet`,
                 name_localizations: { fr: 'mise' },
-                description_localizations: { fr: `Montant à miser entre ${MIN_BET} et ${MAX_BET}` },
-                required: false,
-                min_value: MIN_BET,
-                max_value: MAX_BET
+                description_localizations: { fr: `Montant à miser` },
+                required: false
             }
         ]
     },
