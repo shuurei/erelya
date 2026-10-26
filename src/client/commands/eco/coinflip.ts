@@ -24,7 +24,7 @@ const parseBet = (input: string, coins: number): number | null => {
             return null
         }
 
-        return Math.floor(Math.min(coins, MAX_BET) * percentage / 100);
+        return Math.floor(Math.min(coins * (percentage / 100), MAX_BET));
     }
 
     const amount = Number(value);
