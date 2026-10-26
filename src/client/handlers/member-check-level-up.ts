@@ -89,11 +89,7 @@ export async function handleMemberCheckLevelUp({ member, channel, xpGain }: {
 
     const memberHelper = guildMemberHelperSync(member);
 
-    const displayLevel = reachMaxLevel
-        ? 'MAX'
-        : isPrestigeEnabled
-            ? `P${newProgression.prestige} · ${newProgression.level}`
-            : newLevel.toLocaleString('fr-FR');
+    const displayLevel = reachMaxLevel ? 'MAX' : newLevel.toLocaleString('fr-FR');
 
     const messageLines: string[] = []
 
@@ -102,7 +98,7 @@ export async function handleMemberCheckLevelUp({ member, channel, xpGain }: {
             `Prestige **${previousProgression.prestige}** ➔ **${newProgression.prestige}** !`,
             `Nv. **${previousProgression.level}** ➔ Nv. **${newProgression.level}** 🎉`
         );
-    } else if (isPrestigeEnabled) {
+    } else if (isPrestigeEnabled && newProgression.prestige > 0) {
         messageLines.push(`Prestige **${newProgression.prestige}** · Nv. **${previousProgression.level}** ➔ **${newProgression.level}** 🎉`);
     } else {
         messageLines.push(`Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`);
