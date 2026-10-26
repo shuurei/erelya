@@ -127,7 +127,7 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string> = {
     NRank: '1560932641543426139',
     XRank: '1560932646073139242',
 
-    loading: '',
+    loading: '1564414310686400532',
 } as const
 
 export const currentApplicationEmoji = process.env.ENV === 'DEV'
