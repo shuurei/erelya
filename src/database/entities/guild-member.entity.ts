@@ -83,10 +83,10 @@ export class GuildMember {
     }
 
     get prestige() {
-        return Math.floor(this.totalLevel / 80);
+        return Math.floor(this.totalLevel / 100);
     }
 
     get level() {
-        return this.totalLevel - (this.prestige * 80);
+        return this.totalLevel - (this.prestige * 100);
     }
 }

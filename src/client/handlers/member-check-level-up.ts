@@ -88,8 +88,7 @@ export async function handleMemberCheckLevelUp({ member, channel, xpGain }: {
     if (!channel?.isSendable()) return
 
     const memberHelper = guildMemberHelperSync(member);
-
-    const displayLevel = reachMaxLevel ? 'MAX' : newLevel.toLocaleString('fr-FR');
+    const displayLevel = reachMaxLevel ? 'MAX' : newProgression.level.toLocaleString('fr-FR');
 
     const messageLines: string[] = []
 
