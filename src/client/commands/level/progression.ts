@@ -46,7 +46,7 @@ const buildPayload = async (member: GuildMember) => {
         fields.push({
             name: `Prestige ${memberDatabase.prestige}`,
             value: maxLevelReached
-                ? `**Nv. ${maxLevel}**`
+                ? `**Nv. MAX**`
                 : `**Nv. ${memberDatabase.level.toLocaleString('en')}** ➜ **Nv. ${isLastLevel ? 'MAX' : (memberDatabase.level + 1).toLocaleString('en')}**`,
             inline: true
         });
