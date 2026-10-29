@@ -1,5 +1,5 @@
 import { createBevelPath, drawRandomRects, drawTextBlock } from '@/utils'
-import Canvas from '@napi-rs/canvas'
+import * as Canvas from '@napi-rs/canvas'
 
 const themes = {
     blue: {
@@ -32,7 +32,7 @@ const themes = {
         border: '#cf1ab7',
         rects: ['#e592da', '#ff6cf3']
     }
-}
+} as const
 
 interface CreateNotifCard {
     text: string;
@@ -41,18 +41,14 @@ interface CreateNotifCard {
 }
 
 export const createNotifCard = async (options: CreateNotifCard) => {
-    const {
-        text,
-        fontSize = 26,
-        theme = 'blue'
-    } = options;
+    const { text, fontSize = 26, theme = 'blue' } = options;
 
     const canvas = Canvas.createCanvas(512, 170);
     const ctx = canvas.getContext('2d');
 
     const colors = themes[theme];
-
     const margin = 15;
+
     const bevelPathData = {
         topLeft: 24,
         topRight: 0,
@@ -60,37 +56,50 @@ export const createNotifCard = async (options: CreateNotifCard) => {
         bottomLeft: 0
     }
 
-    const { width, height } = canvas
+    const { width, height } = canvas;
 
     // Form
     const bevelPath = createBevelPath({
         width,
         height,
         margin,
-        ...bevelPathData,
+        ...bevelPathData
     });
 
     ctx.fillStyle = colors.background[1]
-    ctx.fill(bevelPath)
+    ctx.fill(bevelPath);
 
-    // Inner Shadow
-    ctx.save()
-    ctx.clip(bevelPath)
-    ctx.shadowColor = colors.background[0]
-    ctx.shadowBlur = 40
-    ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = 0
-    ctx.fillStyle = '#00000000'
-    ctx.fillRect(margin + 20, margin + 20, width - 2 * margin - 40, height - 2 * margin - 40)
-    ctx.restore()
+    // Inner Ellipse Glow
+    ctx.save();
+    ctx.clip(bevelPath);
+
+    const glowX = width / 2;
+    const glowY = height / 2;
+    const radiusX = width * 0.9;
+    const radiusY = height * 0.75;
+
+    ctx.translate(glowX, glowY);
+    ctx.scale(1, radiusY / radiusX);
+
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusX);
+
+    glow.addColorStop(0, colors.background[0]);
+    glow.addColorStop(0.8, colors.background[1]);
+    glow.addColorStop(1, colors.background[1]);
+
+    ctx.fillStyle = glow;
+    ctx.fillRect(-glowX, (-glowY * radiusX / radiusY), width, (height * radiusX / radiusY));
+
+    ctx.restore();
 
     // Border
-    ctx.strokeStyle = '#00000000'
-    ctx.lineWidth = 6
-    ctx.stroke(bevelPath)
+    ctx.strokeStyle = '#00000000';
+    ctx.lineWidth = 6;
+    ctx.stroke(bevelPath);
 
     // Border offset
-    const offset = 8
+    const offset = 8;
+
     const bevelPathWithOffset = createBevelPath({
         width,
         height,
@@ -98,17 +107,18 @@ export const createNotifCard = async (options: CreateNotifCard) => {
         topLeft: bevelPathData.topLeft + 5,
         topRight: 0,
         bottomRight: bevelPathData.bottomRight + 5,
-        bottomLeft: 0,
+        bottomLeft: 0
     });
 
-    ctx.strokeStyle = colors.border
-    ctx.lineWidth = 4
-    ctx.stroke(bevelPathWithOffset)
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 4;
+    ctx.stroke(bevelPathWithOffset);
 
+    // Text
     drawTextBlock(ctx, text.toUpperCase(), {
         x: width / 2,
         y: height / 2,
-        maxWidth: (width - margin * 2) - 10,
+        maxWidth: width - margin * 2 - 10,
         font: 'Quantico',
         fontSize,
         align: 'center',
@@ -120,16 +130,17 @@ export const createNotifCard = async (options: CreateNotifCard) => {
         }
     });
 
+    // Decorative rectangles
     drawRandomRects(ctx, {
-        amount: 12,
-        colors: colors.rects,
+        amount: 18,
+        colors: [...colors.rects],
         canvasWidth: width,
         canvasHeight: height,
         height: 10,
         width: 15,
         maxHeight: 15,
         maxWidth: 20,
-        margin,
+        margin
     });
 
     return await canvas.encode('png');
