@@ -1,4 +1,4 @@
-import { Command, CustomClient } from '@/structures'
+import { Command, ErelyaClient } from '@/structures'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
 
 import { GuildMemberService } from '@/database/services/guild-member.service'
@@ -21,7 +21,7 @@ const formatTime = (minutes: number) => {
         : `**${m}** min`;
 };
 
-const buildEmbed = async (member: GuildMember, client: CustomClient) => {
+const buildEmbed = async (member: GuildMember, client: ErelyaClient) => {
     const { whiteArrowEmoji } = applicationEmojiHelper();
 
     if (client.callSessions.cache.has(member.user.id)) {

@@ -24,7 +24,7 @@ interface CustomClientSpamBufferData {
 
 import { startAllJobs } from '@/client/jobs'
 
-export class CustomClient extends Client {
+export class ErelyaClient extends Client {
     hub?: Guild & {
         ticketChannel?: ForumChannel;
         heartLogsChannel?: TextChannel;

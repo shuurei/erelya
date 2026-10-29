@@ -2,7 +2,7 @@ import fg from 'fast-glob'
 import { pathToFileURL } from 'url'
 
 import logger from '@/utils/logger'
-import { CustomClient, Event } from '@/structures'
+import { ErelyaClient, Event } from '@/structures'
 import { EmbedUI } from '@/ui'
 
 export interface LoadEventManagerOptions {
@@ -10,9 +10,9 @@ export interface LoadEventManagerOptions {
 }
 
 export class EventManager {
-    client: CustomClient;
+    client: ErelyaClient;
 
-    constructor(client: CustomClient) {
+    constructor(client: ErelyaClient) {
         this.client = client;
     }
 
