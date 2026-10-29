@@ -11,7 +11,7 @@ import {
 } from 'discord.js'
 
 import {
-    CustomClient,
+    ErelyaClient,
     Command,
     CommandStructure,
     MessageCommandStyle
@@ -29,11 +29,11 @@ export interface CommandManagerResolveSlashCommandOptions {
 }
 
 export class CommandManager {
-    client: CustomClient;
+    client: ErelyaClient;
 
     private _commands: Command[];
 
-    constructor(client: CustomClient) {
+    constructor(client: ErelyaClient) {
         this.client = client;
         this._commands = [];
     }
