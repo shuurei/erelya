@@ -77,7 +77,6 @@ export class ErelyaClient extends Client {
         return [
             `v${process.env.BUILD_VERSION} (${process.env.BUILD_NUMBER})`,
             "Bonjour, le monde !",
-            "existential.exe en cours d'exécution..",
             "J'❤ Radiohead",
             "J'❤ Daniel Caesar",
             "La prédiction du chaos.. Est plutôt juste ?"

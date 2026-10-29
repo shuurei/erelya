@@ -17,6 +17,8 @@ new Cron('0 0 * * 1', async () => {
                 if (member) {
                     const totalCoins = await RaffleContributorService.getTotalCoins();
 
+                    jobsLogger.info(({ yellowBright }) => `${yellowBright('Raffle Job')} ${member.user.id} is the winner !`, { arrowColor: 'greenBright' });
+
                     await Promise.all([
                         RaffleContributorService.removeAll(),
                         member.send({
