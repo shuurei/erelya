@@ -1,7 +1,7 @@
 import { GatewayIntentBits, Partials } from 'discord.js'
-import { CustomClient } from '@/structures/CustomClient'
+import { ErelyaClient } from '@/structures/ErelyaClient'
 
-export const client = new CustomClient({
+export const client = new ErelyaClient({
     intents: [
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildPresences,

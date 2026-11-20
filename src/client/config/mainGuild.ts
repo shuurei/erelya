@@ -1,4 +1,4 @@
-import { CustomClientMainGuildData } from '@/structures/CustomClient'
+import { CustomClientMainGuildData } from '@/structures/ErelyaClient'
 
 /** @deprecated */
 export const mainGuildConfig: CustomClientMainGuildData = {

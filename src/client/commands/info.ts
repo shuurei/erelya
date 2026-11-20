@@ -1,7 +1,7 @@
 import { version as discordVersion } from 'discord.js'
 
 import { db } from '@/database/db'
-import { Command, CustomClient } from '@/structures'
+import { Command, ErelyaClient } from '@/structures'
 import { EmbedUI } from '@/ui'
 
 function formatUptime(seconds: number) {
@@ -18,7 +18,7 @@ function formatUptime(seconds: number) {
     ].filter(Boolean).join(' ') || '0s';
 }
 
-const buildPayload = async (client: CustomClient) => {
+const buildPayload = async (client: ErelyaClient) => {
     const discordStart = Date.now();
     await db.query('SELECT 1');
     const databasePing = Date.now() - discordStart;

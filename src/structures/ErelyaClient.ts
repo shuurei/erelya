@@ -24,7 +24,7 @@ interface CustomClientSpamBufferData {
 
 import { startAllJobs } from '@/client/jobs'
 
-export class CustomClient extends Client {
+export class ErelyaClient extends Client {
     hub?: Guild & {
         ticketChannel?: ForumChannel;
         heartLogsChannel?: TextChannel;
@@ -77,7 +77,6 @@ export class CustomClient extends Client {
         return [
             `v${process.env.BUILD_VERSION} (${process.env.BUILD_NUMBER})`,
             "Bonjour, le monde !",
-            "existential.exe en cours d'exécution..",
             "J'❤ Radiohead",
             "J'❤ Daniel Caesar",
             "La prédiction du chaos.. Est plutôt juste ?"

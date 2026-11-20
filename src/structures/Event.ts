@@ -7,14 +7,14 @@ import {
 } from 'discord.js'
 
 import { Command } from './Command'
-import { CustomClient } from './CustomClient'
+import { ErelyaClient } from './ErelyaClient'
 
 export interface CustomClientEvents extends ClientEvents {
     chatInputInteractionCreate: [ChatInputCommandInteraction];
     buttonInteractionCreate: [ButtonInteraction];
     commandCreate: [Command, Message | ChatInputCommandInteraction, string[] | null[]];
     hubReady: [Guild];
-    clientSetup: [CustomClient];
+    clientSetup: [ErelyaClient];
 };
 
 export interface EventRunOptions<Event extends keyof CustomClientEvents> {
@@ -25,7 +25,7 @@ export interface EventOptions<Event extends keyof CustomClientEvents> {
     name: Event;
     once?: boolean;
     run(
-        this: this & { client: CustomClient; },
+        this: this & { client: ErelyaClient; },
         options: EventRunOptions<Event>
     ): any;
 }

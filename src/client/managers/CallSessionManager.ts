@@ -1,5 +1,5 @@
 import { Locale, VoiceState } from 'discord.js'
-import { CustomClient } from '@/structures'
+import { ErelyaClient } from '@/structures'
 import { GuildMemberService } from '@/database/services/guild-member.service';
 
 interface CallSessionFlags {
@@ -21,7 +21,7 @@ type CallSessionData = {
 export class CallSessionManager {
     cache = new Map<string, CallSessionData>();
 
-    constructor(public client: CustomClient) { }
+    constructor(public client: ErelyaClient) { }
 
     getFlags(state: VoiceState) {
         const isDeaf = (state.selfDeaf || state.serverDeaf) ?? false;
