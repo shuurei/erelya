@@ -2,6 +2,8 @@ import { Command } from '@/structures'
 import { ApplicationCommandOptionType, GuildMember, MessageFlags } from 'discord.js'
 
 import { UserService } from '@/database/services/user.service'
+import { AuraService } from '@/database/services/aura.service'
+import { formatAuraChance } from '@/utils/aura'
 
 import { createMediaGallery, createSection, createSeparator, createTextDisplay, createThumbnail } from '@/ui/components/common'
 import { ContainerUI } from '@/ui'
@@ -19,9 +21,10 @@ const buildContainer = async (member: GuildMember) => {
     const avatar = helper.getAvatarURL({ forceStatic: true });
     const banner = helper.getBannerURL({ size: 1024 });
 
-    const [ dominantColor, userDatabase ] = await Promise.all([
+    const [ dominantColor, userDatabase, equippedAura ] = await Promise.all([
         getDominantColor(avatar),
-        member.user.bot ? null : UserService.findById(member.id)
+        member.user.bot ? null : UserService.findById(member.id),
+        member.user.bot ? null : AuraService.equipped(member.guild.id, member.id)
     ]);
 
     const createdAt = toDiscordTimestamp(member.user.createdTimestamp);
@@ -45,6 +48,14 @@ const buildContainer = async (member: GuildMember) => {
         `**Nom d'utilisateur**`,
         `- **\`${member.user.username}\`**`,
     ];
+
+    if (equippedAura) {
+        infoLines.push(
+            '**Aura équipée sur ce serveur**',
+            `- \`${equippedAura.name}\` | *${formatAuraChance(equippedAura.chance)}*`,
+            `> ${equippedAura.description}`
+        );
+    }
 
     if (tagAssignedAt && hasGuildTag) {
         infoLines.push(
