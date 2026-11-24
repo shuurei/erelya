@@ -1,14 +1,15 @@
 import { db } from '../db'
-import { Aura } from '../entities/aura.entity'
 import { MemberAura } from '../entities/member-aura.entity'
 import { AuraPlayer } from '../entities/aura-player.entity'
-import { AURA_ROLL_LIMIT, AURA_ROLL_PRICE, LUCK_POTIONS, LuckPotion, selectAura } from '@/utils/aura'
+import { UserAura } from '../entities/user-aura.entity'
+import { AURA_ROLL_LIMIT, LUCK_POTIONS, LuckPotion, activeLuckPotion, auraLuckPercent, isAuraBonusRoll, selectAura } from '@/utils/aura'
 import { GuildMember } from '../entities/guild-member.entity'
-import { EntityManager, MoreThanOrEqual, In } from 'typeorm'
+import { EntityManager, MoreThanOrEqual } from 'typeorm'
 import { potionWeekStart, potionMonth } from '@/utils/aura-biome'
 import { AuraBiomeService } from './aura-biome.service'
 import { auraHour } from '@/utils/aura-hour'
-import { AURA_GLOVES, gloveLuck } from '@/utils/aura-gloves'
+import { AURA_GLOVES, gloveLuckBonusPercent } from '@/utils/aura-gloves'
+import { AURAS, AURAS_BY_KEY, AURAS_BY_NAME, ROLLABLE_AURAS } from '@/data/auras'
 export type AuraCollectionSort = 'normal' | 'rarest'
 
 export class AuraService {
@@ -61,13 +62,13 @@ export class AuraService {
             }
             
             await manager.getRepository(AuraPlayer).update({ guildId, userId }, {
-                luck: config.luck, luckRollsRemaining: config.rolls,
+                luck: config.storedLuck, luckRollsRemaining: config.rolls,
                 ...(potion === 'godly' ? { potionWeekStartedAt: week, godlyPurchases: purchases + 1 } : {}),
                 ...(potion === 'monthly' ? { potionMonthStartedAt: month.startedAt, monthlyPurchases: monthlyPurchases + 1 } : {})
             });
             
             return {
-                luck: config.luck,
+                bonusPercent: config.bonusPercent,
                 rollsRemaining: config.rolls
             } as const;
         });
@@ -75,7 +76,7 @@ export class AuraService {
 
     static async luckStatus(guildId: string, userId: string) {
         const player = await db.getRepository(AuraPlayer).findOneBy({ guildId, userId });
-        const active = player && player.luckRollsRemaining > 0;
+        const potion = player ? activeLuckPotion(player.luck, player.luckRollsRemaining) : undefined;
 
         const week = potionWeekStart();
         const used = player?.potionWeekStartedAt?.getTime() === week.getTime() ? player.godlyPurchases : 0;
@@ -83,11 +84,13 @@ export class AuraService {
         const month = potionMonth();
         const monthlyUsed = player?.potionMonthStartedAt?.getTime() === month.startedAt.getTime() ? player.monthlyPurchases : 0;
 
+        const gloveBonusPercent = gloveLuckBonusPercent(player?.gloveLevel ?? 0);
         return {
-            luck: (active ? player.luck : 1) * gloveLuck(player?.gloveLevel ?? 0),
-            permanentLuck: gloveLuck(player?.gloveLevel ?? 0),
-            rollsRemaining: active ? player.luckRollsRemaining : 0,
-            potionLuck: (used ? LUCK_POTIONS['monthly'].luck : 0) + (monthlyUsed ? LUCK_POTIONS['monthly'].luck : 0),
+            luckPercent: auraLuckPercent(gloveBonusPercent, potion),
+            gloveBonusPercent,
+            equippedAura: player?.equippedAuraKey ? AURAS_BY_KEY.get(player.equippedAuraKey) : undefined,
+            rollsRemaining: potion ? player?.luckRollsRemaining ?? 0 : 0,
+            potionBonusPercent: potion?.bonusPercent ?? 0,
             godlyRemaining: 5 - used,
             resetsAt: week.getTime() + 7 * 86_400_000,
             monthlyRemaining: 3 - monthlyUsed,
@@ -110,20 +113,20 @@ export class AuraService {
                 return { error: 'quota', availableAt, remaining: 0 } as const;
             }
 
-            const auras = await manager.getRepository(Aura).find({ relations: { biome: true }, order: { id: 'ASC' } });
-            const luck = (player.luckRollsRemaining > 0 ? player.luck : 1) * gloveLuck(player.gloveLevel);
-            const biome = await AuraBiomeService.current(manager);
-            const aura = selectAura(auras, luck, aura => aura.biomeId === biome.id ? biome.multiplier : 1);
-            if (!await this.charge(manager, guildId, userId, AURA_ROLL_PRICE)) {
-                return { error: 'funds', availableAt, remaining: AURA_ROLL_LIMIT - rollsUsed } as const;
-            }
+            const bonusRoll = isAuraBonusRoll(rollsUsed);
+            const potion = activeLuckPotion(player.luck, player.luckRollsRemaining);
+            const luckPercent = auraLuckPercent(gloveLuckBonusPercent(player.gloveLevel), potion, bonusRoll);
+            const biome = AuraBiomeService.current(hour);
+            const getBiomeBoost = (aura: (typeof ROLLABLE_AURAS)[number]) => aura.biome === biome.name ? biome.multiplier : 1;
+            const aura = selectAura(ROLLABLE_AURAS, luckPercent, getBiomeBoost);
+            const biomeBoost = getBiomeBoost(aura);
 
             const inventory = manager.getRepository(MemberAura);
-            const owned = await inventory.findOneBy({ guildId, userId, auraId: aura.id });
+            const owned = await inventory.findOneBy({ guildId, userId, auraKey: aura.key });
             if (owned) {
-                await inventory.increment({ guildId, userId, auraId: aura.id }, 'count', 1);
+                await inventory.increment({ guildId, userId, auraKey: aura.key }, 'count', 1);
             } else {
-                await inventory.insert({ guildId, userId, auraId: aura.id, count: 1 });
+                await inventory.insert({ guildId, userId, auraKey: aura.key, count: 1, firstLuckPercent: luckPercent * biomeBoost });
             }
             
             const count = (owned?.count ?? 0) + 1;
@@ -137,9 +140,10 @@ export class AuraService {
             return {
                 aura,
                 count,
-                luck,
+                luckPercent,
+                bonusRoll,
                 biome,
-                biomeBoost: aura.biomeId === biome.id ? biome.multiplier : 1,
+                biomeBoost,
                 luckRollsRemaining,
                 isNew: !owned,
                 availableAt,
@@ -149,47 +153,120 @@ export class AuraService {
     }
 
     static async collection(guildId: string, userId: string, requestedPage = 1, sort: AuraCollectionSort = 'normal', unlockedOnly = false) {
-        return db.transaction('REPEATABLE READ', async (manager) => {
-            const repo = manager.getRepository(Aura);
-            
-            const total = await repo.count();
-            const owned = await manager.getRepository(MemberAura).findBy({ guildId, userId });
+        const [inventory, specialInventory] = await Promise.all([
+            db.getRepository(MemberAura).findBy({ guildId, userId }),
+            db.getRepository(UserAura).findBy({ userId })
+        ]);
+        
+        const owned = new Map<string, {
+            count: number;
+            obtainedAt: Date | null;
+            firstLuckPercent: number | null
+        }>(inventory.map(({ auraKey, count, obtainedAt, firstLuckPercent }) => [auraKey, { count, obtainedAt, firstLuckPercent }]));
+        
+        for (const { auraKey, obtainedAt } of specialInventory) {
+            owned.set(auraKey, { count: 1, obtainedAt, firstLuckPercent: null });
+        }
 
-            const where = unlockedOnly ? { id: In(owned.map(entry => entry.auraId)) } : {};
-            const filteredTotal = unlockedOnly ? owned.length : total;
-            const pages = Math.max(1, Math.ceil(filteredTotal / 5));
-            const page = Math.min(pages, Math.max(1, Number.isSafeInteger(requestedPage) ? requestedPage : 1));
-            const auras = await repo.find({
-                where,
-                relations: { biome: true },
-                order: { chance: sort === 'rarest' ? 'DESC' : 'ASC', id: 'ASC' },
-                skip: (page - 1) * 5,
-                take: 5
-            });
+        const visible = AURAS.filter(aura => !unlockedOnly || owned.has(aura.key));
+        const sorted = visible.sort((a, b) => {
+            if (a.chance === null || b.chance === null) {
+                return a.chance === b.chance ? a.key.localeCompare(b.key) : a.chance === null ? 1 : -1;
+            }
+
+            const first = a.chance;
+            const second = b.chance;
+            const order = first < second ? -1 : first > second ? 1 : 0;
             
-            return {
-                auras,
-                owned: new Map(owned.map((entry) => [entry.auraId, entry.count])),
-                total,
-                page,
-                pages
-            };
+            return (sort === 'rarest' ? -order : order) || a.key.localeCompare(b.key);
+        });
+
+        const pages = Math.max(1, Math.ceil(sorted.length / 5));
+        const page = Math.min(pages, Math.max(1, Number.isSafeInteger(requestedPage) ? requestedPage : 1));
+        
+        return {
+            auras: sorted.slice((page - 1) * 5, page * 5), owned, total: AURAS.length, page, pages
+        };
+    }
+
+    static async grant(guildId: string, userId: string, key: string) {
+        const aura = AURAS_BY_KEY.get(key);
+        if (!aura) {
+            return { error: 'unknown' } as const;
+        }
+
+        return db.transaction(async manager => {
+            if (aura.chance === null) {
+                const result = await manager.createQueryBuilder()
+                    .insert()
+                    .into(UserAura)
+                    .values({ userId, auraKey: aura.key })
+                    .orIgnore()
+                    .returning(['auraKey'])
+                    .execute();
+
+                return result.raw.length ? { aura } as const : { error: 'owned' } as const;
+            }
+
+            await this.lockPlayer(manager, guildId, userId);
+            const inventory = manager.getRepository(MemberAura);
+            const slot = { guildId, userId, auraKey: aura.key };
+            const owned = await inventory.findOneBy(slot);
+
+            if (owned) {
+                await inventory.increment(slot, 'count', 1);
+            } else {
+                await inventory.insert({ ...slot, count: 1 });
+            }
+
+            return { aura } as const;
         });
     }
 
-    static async equip(guildId: string, userId: string, auraId: number) {
+    static async remove(guildId: string, userId: string, auraKey: string) {
+        const aura = AURAS_BY_KEY.get(auraKey);
+        if (!aura) return null;
+
+        return db.transaction(async manager => {
+            if (aura.chance === null) {
+                const result = await manager.getRepository(UserAura).delete({ userId, auraKey });
+                if (!result.affected) return null;
+                await manager.getRepository(AuraPlayer).update({ userId, equippedAuraKey: auraKey }, { equippedAuraKey: null });
+                return aura;
+            }
+
+            const player = await this.lockPlayer(manager, guildId, userId);
+            const result = await manager.getRepository(MemberAura).delete({ guildId, userId, auraKey });
+            if (!result.affected) return null;
+
+            if (player.equippedAuraKey === auraKey) {
+                await manager.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraKey: null });
+            }
+            
+            return aura;
+        });
+    }
+
+    static async equip(guildId: string, userId: string, auraKey: string) {
+        const aura = AURAS_BY_KEY.get(auraKey);
+        if (!aura) return null;
+
         return db.transaction(async (manager) => {
+            if (aura.chance === null) {
+                const owned = await manager.getRepository(UserAura).findOne({
+                    where: { userId, auraKey },
+                    lock: { mode: 'pessimistic_write' }
+                });
+
+                if (!owned) return null;
+            }
+            
             await this.lockPlayer(manager, guildId, userId);
-            if (!Number.isSafeInteger(auraId) || auraId < 1 || auraId > 2147483647) {
+            if (aura.chance !== null && !await manager.getRepository(MemberAura).existsBy({ guildId, userId, auraKey, count: MoreThanOrEqual(1) })) {
                 return null;
             }
           
-            const aura = await manager.getRepository(Aura).findOneBy({ id: auraId });
-            if (!aura || !await manager.getRepository(MemberAura).existsBy({ guildId, userId, auraId: aura.id, count: MoreThanOrEqual(1) })) {
-                return null;
-            }
-          
-            await manager.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraId: aura.id });
+            await manager.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraKey: aura.key });
           
             return aura;
         });
@@ -197,11 +274,14 @@ export class AuraService {
 
     static async gloves(guildId: string, userId: string) {
         const player = await db.getRepository(AuraPlayer).findOneBy({ guildId, userId });
-        const owned = await db.getRepository(MemberAura).find({ where: { guildId, userId }, relations: { aura: true } });
+        const owned = await db.getRepository(MemberAura).findBy({ guildId, userId });
 
         return {
             level: player?.gloveLevel ?? 0,
-            counts: new Map(owned.map((entry) => [entry.aura.name, entry.count]))
+            counts: new Map<string, number>(owned.flatMap(entry => {
+                const aura = AURAS_BY_KEY.get(entry.auraKey);
+                return aura ? [[aura.name, entry.count] as const] : [];
+            }))
         };
     }
 
@@ -221,10 +301,13 @@ export class AuraService {
             const glove = AURA_GLOVES[tier];
             const ingredients = [];
             
-            for (const [name, amount] of Object.entries(glove.recipe)) {
-                const aura = await manager.getRepository(Aura).findOneBy({ name });
-                const entry = aura && await manager.getRepository(MemberAura).findOneBy({ guildId, userId, auraId: aura.id });
-                
+            for (const [auraName, amount] of Object.entries(glove.recipe)) {
+                const aura = AURAS_BY_NAME.get(auraName);
+                if (!aura || aura.chance === null) {
+                    return { error: 'ingredients' } as const;
+                }
+
+                const entry = await manager.getRepository(MemberAura).findOneBy({ guildId, userId, auraKey: aura.key });
                 if (!entry || entry.count < amount) {
                     return { error: 'ingredients' } as const;
                 }
@@ -233,9 +316,9 @@ export class AuraService {
             }
             
             for (const { entry, amount } of ingredients) {
-                await manager.getRepository(MemberAura).decrement({ guildId, userId, auraId: entry.auraId }, 'count', amount);
-                if (entry.auraId === player.equippedAuraId && entry.count === amount) {
-                    await manager.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraId: null });
+                await manager.getRepository(MemberAura).decrement({ guildId, userId, auraKey: entry.auraKey }, 'count', amount);
+                if (entry.auraKey === player.equippedAuraKey && entry.count === amount) {
+                    await manager.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraKey: null });
                 }
             }
 
@@ -246,15 +329,11 @@ export class AuraService {
     }
 
     static async unequip(guildId: string, userId: string) {
-        await db.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraId: null });
+        await db.getRepository(AuraPlayer).update({ guildId, userId }, { equippedAuraKey: null });
     }
 
     static async equipped(guildId: string, userId: string) {
-        const player = await db.getRepository(AuraPlayer).findOne({
-            where: { guildId, userId },
-            relations: { equippedAura: true }
-        });
-
-        return player?.equippedAura ?? null;
+        const player = await db.getRepository(AuraPlayer).findOneBy({ guildId, userId });
+        return player?.equippedAuraKey == null ? null : AURAS_BY_KEY.get(player.equippedAuraKey) ?? null;
     }
 }

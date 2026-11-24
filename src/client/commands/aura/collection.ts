@@ -1,13 +1,17 @@
-import { ApplicationCommandOptionType, ComponentType, Message, MessageFlags, MessageCreateOptions, bold } from 'discord.js'
+import { ApplicationCommandOptionType, ComponentType, Message, MessageFlags, MessageCreateOptions, bold, GuildMember, time } from 'discord.js'
 import { Command } from '@/structures/Command'
 import { AuraService, AuraCollectionSort } from '@/database/services/aura.service'
 import { EmbedUI } from '@/ui/EmbedUI'
 import { auraError } from '@/ui/aura-error'
 import { formatAuraChance } from '@/utils/aura'
 import { createActionRow, createButton } from '@/ui/components/common'
+import { guildMemberHelperSync } from '@/helpers'
+import { getDominantColor } from '@/utils'
 
-async function showCollection(guildId: string, userId: string, sort: AuraCollectionSort, unlockedOnly: boolean, reply: (data: Pick<MessageCreateOptions, 'embeds' | 'components'>) => Promise<Message>) {
+async function showCollection(member: GuildMember, guildId: string, userId: string, sort: AuraCollectionSort, unlockedOnly: boolean, reply: (data: Pick<MessageCreateOptions, 'embeds' | 'components'>) => Promise<Message>) {
     let page = 0;
+
+    const helper = guildMemberHelperSync(member)
 
     const render = async (disabled = false) => {
         const result = await AuraService.collection(guildId, userId, page, sort, unlockedOnly);
@@ -17,17 +21,27 @@ async function showCollection(guildId: string, userId: string, sort: AuraCollect
 
         return {
             embeds: [EmbedUI.createMessage({
-                color: 'indigo',
-                title: `✨ Collection d'auras`,
+                color: await getDominantColor(helper.getAvatarURL({ forceStatic: true })),
+                thumbnail: { url: helper.getAvatarURL() },
+                title: `✨ Collection d'auras de ${helper.getName()}`,
                 description: `Pour débloqué des **auras** faites \`/aura roll\` :)`,
-                fields: auras.map((aura) => owned.has(aura.id) ? {
-                    name: `✨ #${aura.id} • ${aura.name} x${owned.get(aura.id) ?? 0}`,
-                    value: [
-                        `- Rareté ${formatAuraChance(aura.chance)}`,
-                        aura.biome && `- Biome \`${aura.biome.name}\``,
-                        `> *${aura.description}*`,
-                    ].filter(Boolean).join('\n')
-                } : { name: `🔒 #${aura.id} • ???`, value: ' ' }),
+                fields: auras.map((aura) => {
+                    const acquisition = owned.get(aura.key);
+                    if (!acquisition) return { name: '🔒 ??', value: ' ' };
+
+                    const { count, obtainedAt, firstLuckPercent } = acquisition;
+                    return {
+                        name: `✨ ${aura.name} x${count}`,
+                        value: [
+                            `- ID: **\`#${aura.key}\`**`,
+                            aura.chance === null ? '- ??' : `- Rareté ${formatAuraChance(aura.chance)}`,
+                            aura.biome && `- Biome \`${aura.biome}\``,
+                            `- Première obtention : ${obtainedAt ? time(obtainedAt, 'D') : 'Date inconnue'}`,
+                            aura.chance !== null && `- Luck à la première obtention : ${firstLuckPercent === null ? 'Non enregistrée' : `**${(firstLuckPercent / 100).toLocaleString('fr-FR')}**`}`,
+                            `> *${aura.description}*`,
+                        ].filter(Boolean).join('\n')
+                    };
+                }),
                 footer: { text: `Page ${page}/${pages}` }
             })],
             components: disabled ? [] : [
@@ -97,6 +111,7 @@ export default new Command({
         await interaction.deferReply();
 
         return showCollection(
+            interaction.member,
             interaction.guildId,
             interaction.user.id,
             (interaction.options.getString('sort') ?? 'normal') as AuraCollectionSort,
@@ -108,6 +123,7 @@ export default new Command({
         const sort = args.some(arg => arg?.toLowerCase() === 'rarest') ? 'rarest' : 'normal';
 
         return showCollection(
+            message.member!,
             message.guildId,
             message.author.id,
             sort,

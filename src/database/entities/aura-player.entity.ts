@@ -1,5 +1,4 @@
-import { Check, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm'
-import { Aura } from './aura.entity'
+import { Check, Column, Entity, PrimaryColumn } from 'typeorm'
 
 @Entity('aura_player')
 @Check('aura_players_rolls_used', '"rollsUsed" BETWEEN 0 AND 10')
@@ -42,10 +41,6 @@ export class AuraPlayer {
     @Column({ type: 'integer', default: 0 })
     gloveLevel: number;
 
-    @Column({ type: 'integer', nullable: true })
-    equippedAuraId: number | null;
-
-    @ManyToOne(() => Aura, { onDelete: 'SET NULL', nullable: true })
-    @JoinColumn({ name: 'equippedAuraId' })
-    equippedAura: Aura | null;
+    @Column({ type: 'varchar', nullable: true })
+    equippedAuraKey: string | null;
 }

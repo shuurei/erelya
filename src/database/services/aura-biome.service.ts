@@ -1,17 +1,14 @@
-import { EntityManager } from 'typeorm'
-import { db } from '../db'
+import { ROLLABLE_AURAS } from '@/data/auras'
+import { BiomeDefinitions } from '@/data/biomes'
 import { auraHour, AURA_HOUR_MS } from '@/utils/aura-hour'
-import { Aura } from '../entities/aura.entity'
-import { AuraBiome } from '../entities/aura-biome.entity'
+
+const biomes = Object.values(BiomeDefinitions);
 
 export class AuraBiomeService {
-    static async current(manager: EntityManager = db.manager): Promise<AuraBiome & { auras: Aura[]; changesAt: number }> {
-        const hour = auraHour();
-
-        const biomes = await manager.getRepository(AuraBiome).find({ order: { id: 'ASC' } });
+    static current(hour = auraHour()) {
         const biome = biomes[(hour.startedAt / AURA_HOUR_MS) % biomes.length];
-        const auras = await manager.getRepository(Aura).find({ where: { biomeId: biome.id }, order: { id: 'ASC' } });
-        
+        const auras = ROLLABLE_AURAS.filter(aura => aura.biome === biome.name);
+
         return { ...biome, auras, changesAt: hour.changesAt };
     }
 }

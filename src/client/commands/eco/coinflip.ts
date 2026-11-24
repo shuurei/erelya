@@ -3,145 +3,46 @@ import { Command } from '@/structures/Command'
 
 import { createNotifCard } from '@/ui/assets/cards/notifCard'
 import { createMediaGallery } from '@/ui/components/common'
-import { GuildMemberService } from '@/database/services/guild-member.service'
+import { CoinflipService, COINFLIP_HOURLY_LIMIT, MIN_COINFLIP_BET } from '@/database/services/coinflip.service'
 
-const MIN_BET = 100;
-const MAX_BET = 1_000_000;
+const formatCoins = (amount: number) => amount.toLocaleString('fr-FR');
 
-const parseBet = (input: string, coins: number): number | null => {
-    const value = input.trim().toLowerCase()
-
-    if (value === 'max') {
-        return Math.min(coins, MAX_BET)
+const handleCommand = async ({ amount: input, guildId, member }: { amount: string; guildId: string; member: GuildMember }) => {
+    const result = await CoinflipService.play(guildId, member.id, input);
+    if (result.error) {
+        const errors = {
+            invalid: 'Mise invalide. Utilisez un montant, max ou un pourcentage entre 0 et 100 %.',
+            minimum: `La mise minimale est de ${formatCoins(MIN_COINFLIP_BET)} pièces.`,
+            maximum: `La mise maximale est de ${formatCoins(result.maxBet ?? 0)} pièces.`,
+            funds: 'Vous n’avez pas assez de pièces pour parier.',
+            balance: 'Un gain dépasserait le solde maximal. Réduisez votre mise.',
+            quota: `Vos ${COINFLIP_HOURLY_LIMIT} coinflips sont utilisés. Réessayez à la prochaine heure.`
+        };
+        return [{
+            attachment: await createNotifCard({ text: `[${errors[result.error]}]`, theme: 'red' }),
+            name: 'failure.png'
+        }];
     }
 
-    const percentageMatch = value.match(/^(\d+(?:[.,]\d+)?)%$/);
-
-    if (percentageMatch) {
-        const percentage = Number(percentageMatch[1].replace(',', '.'));
-
-        if (percentage <= 0 || percentage > 100) {
-            return null
-        }
-
-        return Math.floor(Math.min(coins * (percentage / 100), MAX_BET));
-    }
-
-    const amount = Number(value);
-
-    if (!Number.isSafeInteger(amount) || amount <= 0) {
-        return null
-    }
-
-    return amount
-}
-
-const handleCommand = async ({ amount: input, guildId, member }: {
-    amount: string;
-    guildId: string;
-    member: GuildMember;
-}) => {
-    const { coins } = await GuildMemberService.findById({ guildId, userId: member.id }) ?? { coins: 0 }
-    const amount = parseBet(input, coins);
-
-    if (amount === null) {
-        return [
-            {
-                attachment: await createNotifCard({
-                    text: '[Mise invalide. Utilisez un montant, max ou un pourcentage entre 1% et 100%.]',
-                    theme: 'red'
-                }),
-                name: 'failure.png'
-            }
-        ]
-    }
-
-    if (amount < MIN_BET) {
-        return [
-            {
-                attachment: await createNotifCard({
-                    text: `[La mise minimale est de ${MIN_BET.toLocaleString('en')} pièces.]`,
-                    theme: 'red'
-                }),
-                name: 'failure.png'
-            }
-        ]
-    }
-
-    if (amount > MAX_BET) {
-        return [
-            {
-                attachment: await createNotifCard({
-                    text: `[La mise maximale est de ${MAX_BET.toLocaleString('en')} pièces.]`,
-                    theme: 'red'
-                }),
-                name: 'failure.png'
-            }
-        ]
-    }
-
-    if (coins < amount) {
-        return [
-            {
-                attachment: await createNotifCard({
-                    text: "[Vous n'avez pas assez d'argent pour parier.]",
-                    theme: 'red'
-                }),
-                name: 'failure.png'
-            }
-        ]
-    }
-
-    const win = Math.random() < 0.5;
-    if (win) {
-        await Promise.all([
-            GuildMemberService.addCoins({ guildId, userId: member.id }, amount),
-            GuildMemberService.incrementCoinflipWon({ guildId, userId: member.id })
-        ]);
-
-        return [
-            {
-                attachment: await createNotifCard({
-                    text: `[Vous avez doublé votre mise ! Vous avez gagné ${amount.toLocaleString('en')} pièces.]`,
-                    theme: 'green'
-                }),
-                name: 'success.png'
-            },
-            {
-                attachment: await createNotifCard({
-                    text: `[Nouveau solde : ${(coins + amount).toLocaleString('en')} pièces.]`
-                }),
-                name: 'newBalance.png'
-            }
-        ]
-    }
-
-    await Promise.all([
-        GuildMemberService.removeCoins({ guildId, userId: member.id }, amount),
-        GuildMemberService.incrementCoinflipLost({ guildId, userId: member.id })
-    ]);
-
+    const outcome = result.win
+        ? `Vous avez doublé votre mise ! Vous avez gagné ${formatCoins(result.amount)} pièces.`
+        : `Vous avez perdu votre mise de ${formatCoins(result.amount)} pièces.`;
     return [
         {
-            attachment: await createNotifCard({
-                text: `[Vous avez perdu votre mise de ${amount.toLocaleString('en')} pièces.]`,
-                theme: 'red'
-            }),
-            name: 'failure.png'
+            attachment: await createNotifCard({ text: `[${outcome}]`, theme: result.win ? 'green' : 'red' }),
+            name: result.win ? 'success.png' : 'failure.png'
         },
         {
-            attachment: await createNotifCard({
-                text: `[Nouveau solde : ${(coins - amount).toLocaleString('en')} pièces.]`
-            }),
+            attachment: await createNotifCard({ text: `[Solde : ${formatCoins(result.balance)} pièces. ${result.remaining}/${COINFLIP_HOURLY_LIMIT} coinflips restants.]` }),
             name: 'newBalance.png'
         }
-    ]
-}
+    ];
+};
 
 export default new Command({
-    description: '🎰 Execute a coin flip to wager guild coins',
+    description: '🎰 Wager guild coins in a coin flip (10 per hour)',
     descriptionLocalizations: {
-        fr: '🎰 Lancez une pièce pour miser des pièces du serveur'
+        fr: '🎰 Misez des pièces du serveur (10 coinflips par heure)'
     },
     slashCommand: {
         arguments: [

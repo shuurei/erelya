@@ -2,14 +2,10 @@ import { Command } from '@/structures/Command'
 import { AuraService } from '@/database/services/aura.service'
 import { EmbedUI } from '@/ui/EmbedUI'
 import { auraError } from '@/ui/aura-error'
-import { formatAuraChance } from '@/utils/aura'
+import { AURA_ROLL_LIMIT, formatAuraChance } from '@/utils/aura'
 
 const buildPayload = async (guildId: string, userId: string) => {
     const result = await AuraService.roll(guildId, userId);
-    if (result.error === 'funds') {
-        return auraError('Il vous faut 5 000 pièces de serveur.');
-    }
-
     if (!result.aura) {
         return auraError(`Vos 10 tirages sont utilisés. Vous devez attendre la prochaine heure.`);
     }
@@ -17,18 +13,19 @@ const buildPayload = async (guildId: string, userId: string) => {
     return {
         embeds: [EmbedUI.createMessage({
             color: result.isNew ? 'yellow' : 'indigo',
-            title: `✨ #${result.aura.id} • ${result.aura.name} ${result.isNew ? '[NEW]' : `[${result.count - 1} en stock]`}`,
+            title: `✨ ${result.aura.name} ${result.isNew ? '[NEW]' : `[${result.count - 1} en stock]`}`,
             description: [
-                `${formatAuraChance(result.aura.chance)} avec une chance de **\`${result.luck.toLocaleString('en')}\`**`,
+                ...(result.bonusRoll ? ['🍀 **10éme tirage : chance de base doublée !**'] : []),
+                `${formatAuraChance(result.aura.chance)} • Chance du tirage **${(result.luckPercent / 100).toLocaleString('en')}**`,
                 `> *${result.aura.description}*`,
             ].join('\n'),
-            footer: { text: `${result.remaining}/10 tirages restants` }
+            footer: { text: `${result.remaining}/${AURA_ROLL_LIMIT} tirages restants` }
         })]
     };
 }
 
 export default new Command({
-    description: '✨ Roll une aura pour 5 000 pièces, 10 tirages par heure',
+    description: '✨ 10 tirages gratuits par heure, chance de base doublée au 10ᵉ',
     access: {
         guild: { modules: { economy: { isEnabled: true } } }
     },

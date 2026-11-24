@@ -52,7 +52,7 @@ const buildContainer = async (member: GuildMember) => {
     if (equippedAura) {
         infoLines.push(
             '**Aura équipée sur ce serveur**',
-            `- \`${equippedAura.name}\` | *${formatAuraChance(equippedAura.chance)}*`,
+            `- \`${equippedAura.name}\` | *${equippedAura.chance === null ? '**\`??\`**' : formatAuraChance(equippedAura.chance)}*`,
             `> ${equippedAura.description}`
         );
     }

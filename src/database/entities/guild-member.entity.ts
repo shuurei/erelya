@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn, Column, UpdateDateColumn } from 'typeorm'
+import { Check, Entity, PrimaryColumn, CreateDateColumn, ManyToOne, JoinColumn, Column, UpdateDateColumn } from 'typeorm'
 
 import { User } from './user.entity'
 import { Guild } from './guild.entity'
@@ -6,6 +6,7 @@ import { Guild } from './guild.entity'
 import { xpToLevel } from '@/utils'
 
 @Entity()
+@Check('guild_member_coinflip_rolls_used', '"coinflipRollsUsed" BETWEEN 0 AND 10')
 export class GuildMember {
     @PrimaryColumn({ type: 'varchar' })
     userId: string;
@@ -48,6 +49,12 @@ export class GuildMember {
 
     @Column({ type: 'int', default: 0 })
     coinflipLost: number;
+
+    @Column({ type: 'timestamptz', nullable: true })
+    coinflipHour: Date | null;
+
+    @Column({ type: 'int', default: 0 })
+    coinflipRollsUsed: number;
 
     @Column({ type: 'int', default: 0 })
     portalEntriesToday: number;

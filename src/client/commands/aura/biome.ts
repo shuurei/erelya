@@ -4,12 +4,12 @@ import { AuraBiomeService } from '@/database/services/aura-biome.service'
 import { formatAuraChance } from '@/utils/aura'
 
 const buildPayload = async () => {
-    const current = await AuraBiomeService.current();
+    const current = AuraBiomeService.current();
     const boosted = current.multiplier > 1 ? current.auras : [];
     const rarest = [...boosted].sort((a, b) => {
-        const first = BigInt(a.chance);
-        const second = BigInt(b.chance);
-        return first > second ? -1 : first < second ? 1 : a.id - b.id;
+        const first = a.chance;
+        const second = b.chance;
+        return first > second ? -1 : first < second ? 1 : a.key.localeCompare(b.key);
     }).slice(0, 5);
 
     const changesAt = Math.floor(current.changesAt / 1000);
@@ -25,9 +25,9 @@ const buildPayload = async () => {
             {
                 name: '✨ Auras boostées',
                 value: rarest.map((aura, index) => [
-                    `- ${medals[index]} **#${aura.id}** • \`${aura.name}\``,
+                    `- ${medals[index]} **${aura.key}** • \`${aura.name}\``,
                     `> *Rareté ${formatAuraChance(aura.chance)}*`
-                ].join('\n')).join('\n')
+                ].join('\n')).join('\n') || 'Aucune aura boostée dans ce biome'
             }
         ]
     });
