@@ -1,9 +1,45 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class Migration1795396700745 implements MigrationInterface {
-    name = 'Migration1795396700745'
+    name = 'Migration1795396700745';
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        const auraTables = ["aura_biomes","auras","aura_player","member_auras"];
+        const existingAuras = [];
+        for (const table of [...auraTables, 'aura_players']) {
+            if (await queryRunner.hasTable(table)) existingAuras.push(table);
+        }
+        if (existingAuras.length) {
+            throw new Error('Aura tables already exist (' + existingAuras.join(', ') + '). Compare and migrate that schema explicitly before applying this migration; no tables have been modified.');
+        }
+
+        if (await queryRunner.hasTable('guild')) {
+            // Upgrade an existing installation: never recreate, alter or remove its historical tables.
+            await queryRunner.query(`CREATE TABLE "aura_biomes" ("id" SERIAL NOT NULL, "name" character varying(100) NOT NULL, "description" text NOT NULL, "multiplier" integer NOT NULL, CONSTRAINT "UQ_a9ba5457c008ffa1e32a6895354" UNIQUE ("name"), CONSTRAINT "aura_biomes_multiplier_positive" CHECK ("multiplier" >= 1), CONSTRAINT "PK_84bc55cb47acff536cd6ac4510d" PRIMARY KEY ("id"))`);
+            await queryRunner.query(`CREATE TABLE "auras" ("id" SERIAL NOT NULL, "name" character varying(100) NOT NULL, "chance" numeric(1000,0) NOT NULL, "description" text NOT NULL, "biomeId" integer, CONSTRAINT "UQ_9a97719268f3380f15010eeaa2f" UNIQUE ("name"), CONSTRAINT "auras_chance_positive" CHECK ("chance" >= 1), CONSTRAINT "PK_3a03dc4cc9c6e54a09f1d9059da" PRIMARY KEY ("id"))`);
+            await queryRunner.query(`CREATE INDEX "IDX_auras_biome" ON "auras"  ("biomeId") `);
+            await queryRunner.query(`CREATE TABLE "aura_player" ("guildId" character varying NOT NULL, "userId" character varying NOT NULL, "rollHour" TIMESTAMP WITH TIME ZONE, "rollsUsed" integer NOT NULL DEFAULT '0', "luck" integer NOT NULL DEFAULT '1', "luckRollsRemaining" integer NOT NULL DEFAULT '0', "potionWeekStartedAt" TIMESTAMP WITH TIME ZONE, "godlyPurchases" integer NOT NULL DEFAULT '0', "potionMonthStartedAt" TIMESTAMP WITH TIME ZONE, "monthlyPurchases" integer NOT NULL DEFAULT '0', "gloveLevel" integer NOT NULL DEFAULT '0', "equippedAuraId" integer, CONSTRAINT "aura_players_glove_level" CHECK ("gloveLevel" BETWEEN 0 AND 10), CONSTRAINT "aura_players_monthly_purchases" CHECK ("monthlyPurchases" BETWEEN 0 AND 3), CONSTRAINT "aura_players_godly_purchases" CHECK ("godlyPurchases" BETWEEN 0 AND 5), CONSTRAINT "aura_players_luck_rolls_positive" CHECK ("luckRollsRemaining" >= 0), CONSTRAINT "aura_players_luck_positive" CHECK ("luck" >= 1), CONSTRAINT "aura_players_rolls_used" CHECK ("rollsUsed" BETWEEN 0 AND 10), CONSTRAINT "PK_9a1fde1a5e3f0e424be99a7d0b1" PRIMARY KEY ("guildId", "userId"))`);
+            await queryRunner.query(`CREATE TABLE "member_auras" ("guildId" character varying NOT NULL, "userId" character varying NOT NULL, "auraId" integer NOT NULL, "count" integer NOT NULL DEFAULT '1', "obtainedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "member_auras_count_positive" CHECK ("count" >= 0), CONSTRAINT "PK_0d84143daaa694f3166a4a19763" PRIMARY KEY ("guildId", "userId", "auraId"))`);
+            await queryRunner.query(`ALTER TABLE "auras" ADD CONSTRAINT "FK_4a798a6c2350d1131c6322bd2b0" FOREIGN KEY ("biomeId") REFERENCES "aura_biomes"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+            await queryRunner.query(`ALTER TABLE "aura_player" ADD CONSTRAINT "FK_907aafae31cd46120b832fd2e6d" FOREIGN KEY ("equippedAuraId") REFERENCES "auras"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+            await queryRunner.query(`ALTER TABLE "member_auras" ADD CONSTRAINT "FK_92a877211477449fb873f11737f" FOREIGN KEY ("auraId") REFERENCES "auras"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+            return;
+        }
+
+        // Fresh installation: create the complete schema. Enums may remain after a manual table reset.
+        for (const [name, values] of [
+            ['channel_blacklist_scope_enum', ['LEVEL', 'ECONOMY', 'COMMAND', 'QUEST', 'MESSAGE']],
+            ['guild_member_daily_quest_type_enum', ['call', 'stream']],
+            ['guild_portal_rank_enum', ['N', 'S', 'A', 'B', 'C', 'D', 'E']]
+        ] as const) {
+            const present = await queryRunner.query(
+                'SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE t.typname = $1 AND n.nspname = $2',
+                [name, 'public']
+            );
+            if (!present.length) {
+                await queryRunner.query(`CREATE TYPE "public"."${name}" AS ENUM(${values.map(value => "'" + value + "'").join(', ')})`);
+            }
+        }
         await queryRunner.query(`CREATE TABLE "aura_biomes" ("id" SERIAL NOT NULL, "name" character varying(100) NOT NULL, "description" text NOT NULL, "multiplier" integer NOT NULL, CONSTRAINT "UQ_a9ba5457c008ffa1e32a6895354" UNIQUE ("name"), CONSTRAINT "aura_biomes_multiplier_positive" CHECK ("multiplier" >= 1), CONSTRAINT "PK_84bc55cb47acff536cd6ac4510d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "auras" ("id" SERIAL NOT NULL, "name" character varying(100) NOT NULL, "chance" numeric(1000,0) NOT NULL, "description" text NOT NULL, "biomeId" integer, CONSTRAINT "UQ_9a97719268f3380f15010eeaa2f" UNIQUE ("name"), CONSTRAINT "auras_chance_positive" CHECK ("chance" >= 1), CONSTRAINT "PK_3a03dc4cc9c6e54a09f1d9059da" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_auras_biome" ON "auras"  ("biomeId") `);
@@ -44,45 +80,8 @@ export class Migration1795396700745 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "shop_item" ADD CONSTRAINT "FK_cae8b67f051b2496bedfa3f29d3" FOREIGN KEY ("guildId") REFERENCES "guild"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
     }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "shop_item" DROP CONSTRAINT "FK_cae8b67f051b2496bedfa3f29d3"`);
-        await queryRunner.query(`ALTER TABLE "shop_item" DROP CONSTRAINT "FK_3939c7a5081032b77d218546710"`);
-        await queryRunner.query(`ALTER TABLE "shop" DROP CONSTRAINT "FK_5b9be44cd82b487a2182b515d17"`);
-        await queryRunner.query(`ALTER TABLE "raffle_contributor" DROP CONSTRAINT "FK_431fbc44f41390b25cb723e35f7"`);
-        await queryRunner.query(`ALTER TABLE "member_auras" DROP CONSTRAINT "FK_92a877211477449fb873f11737f"`);
-        await queryRunner.query(`ALTER TABLE "guild_portal" DROP CONSTRAINT "FK_f4af041e36718068b008f8d0fa1"`);
-        await queryRunner.query(`ALTER TABLE "guild_portal" DROP CONSTRAINT "FK_316b7a848cd66b1630d62cf77be"`);
-        await queryRunner.query(`ALTER TABLE "quest_module" DROP CONSTRAINT "FK_395f0009d203413371a6bf0d8af"`);
-        await queryRunner.query(`ALTER TABLE "level_module" DROP CONSTRAINT "FK_3aa68916c71ff79d210e37b4b80"`);
-        await queryRunner.query(`ALTER TABLE "event_module" DROP CONSTRAINT "FK_05b6b326300a4ff012fc8d72d09"`);
-        await queryRunner.query(`ALTER TABLE "economy_module" DROP CONSTRAINT "FK_9ff55fd4b5fcc16f79eab2f8eb3"`);
-        await queryRunner.query(`ALTER TABLE "guild_member_daily_quest" DROP CONSTRAINT "FK_ebbe2fb7e4672d0d15088921a07"`);
-        await queryRunner.query(`ALTER TABLE "guild_member" DROP CONSTRAINT "FK_c6adfed3d6a7330d91a4f21ce1d"`);
-        await queryRunner.query(`ALTER TABLE "guild_member" DROP CONSTRAINT "FK_079c272d9c6d2ccc45240ff246f"`);
-        await queryRunner.query(`ALTER TABLE "guild_level_reward" DROP CONSTRAINT "FK_c40547f30f01dcfef6bff5823a7"`);
-        await queryRunner.query(`ALTER TABLE "channel_blacklist" DROP CONSTRAINT "FK_3ea720478d5e62581d749570cf3"`);
-        await queryRunner.query(`ALTER TABLE "aura_player" DROP CONSTRAINT "FK_907aafae31cd46120b832fd2e6d"`);
-        await queryRunner.query(`ALTER TABLE "auras" DROP CONSTRAINT "FK_4a798a6c2350d1131c6322bd2b0"`);
-        await queryRunner.query(`DROP TABLE "shop_item"`);
-        await queryRunner.query(`DROP TABLE "shop"`);
-        await queryRunner.query(`DROP TABLE "raffle_contributor"`);
-        await queryRunner.query(`DROP TABLE "member_auras"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_55cc97b6c0536e68cbfc886b6f"`);
-        await queryRunner.query(`DROP TABLE "guild_portal"`);
-        await queryRunner.query(`DROP TABLE "quest_module"`);
-        await queryRunner.query(`DROP TABLE "level_module"`);
-        await queryRunner.query(`DROP TABLE "event_module"`);
-        await queryRunner.query(`DROP TABLE "economy_module"`);
-        await queryRunner.query(`DROP TABLE "guild_member_daily_quest"`);
-        await queryRunner.query(`DROP TABLE "guild_member"`);
-        await queryRunner.query(`DROP TABLE "user"`);
-        await queryRunner.query(`DROP TABLE "guild_level_reward"`);
-        await queryRunner.query(`DROP TABLE "channel_blacklist"`);
-        await queryRunner.query(`DROP TABLE "guild"`);
-        await queryRunner.query(`DROP TABLE "aura_player"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_auras_biome"`);
-        await queryRunner.query(`DROP TABLE "auras"`);
-        await queryRunner.query(`DROP TABLE "aura_biomes"`);
+    public async down(): Promise<void> {
+        // A shared baseline can run on production or a fresh database: never drop historical user data.
+        throw new Error('Automatic rollback is disabled for this consolidated migration. Restore a backup or prepare a targeted rollback for the aura tables.');
     }
-
 }

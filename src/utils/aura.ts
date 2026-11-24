@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 
 export const AURA_COOLDOWN = 60 * 60 * 1000;
 export const AURA_ROLL_LIMIT = 10;
-export const AURA_ROLL_PRICE = 5000;
+export const AURA_ROLL_PRICE = 0;
 
 export const LUCK_POTIONS = {
     little: { name: 'Petite', luck: 2, rolls: 3, price: 5000 },
