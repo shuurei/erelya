@@ -63,12 +63,6 @@ export default new Event({
 
             const userDatabase = await UserService.findById(user.id);
 
-            if (!this.client.application?.owner) {
-                await this.client.application?.fetch();
-            }
-
-            const isDeveloper = (this.client.application!.owner as Team).members.has(user.id);
-
             if (access) {
                 if (access.guild) {
                     if (access.guild.modules) {
@@ -113,8 +107,17 @@ export default new Event({
                 }
 
                 if (access.user) {
-                    if (access.user?.isDeveloper && !isDeveloper) {
-                        return await replyAuthorizationRefused(`Autorisation insuffisante. Accès développeur requis.`);
+                    if (access.user.isDeveloper) {
+                        const application = this.client.application;
+                        if (application && !application.owner) {
+                            await application.fetch();
+                        }
+
+                        const owner = application?.owner;
+                        const isDeveloper = owner instanceof Team ? owner.members.has(user.id) : owner?.id === user.id;
+                        if (!isDeveloper) {
+                            return await replyAuthorizationRefused(`Autorisation insuffisante. Accès développeur requis.`);
+                        }
                     }
 
                     if (access.user?.isGuildOwner && user.id !== guild.ownerId) {

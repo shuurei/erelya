@@ -14,8 +14,8 @@ const ITEMS = Object.entries(LUCK_POTIONS) as [LuckPotion, (typeof LUCK_POTIONS)
 const ERRORS = {
     active: 'Une potion est déjà active.',
     funds: "Vous n'avez pas assez de pièces sur ce serveur.",
-    weekly: 'Vous avez déjà acheté vos 5 potions Godly cette semaine.',
-    monthly: 'Vous avez déjà acheté vos 3 potions Monthly ce mois-ci.'
+    weekly: `Quota hebdomadaire atteint : ${LUCK_POTIONS.godly.name} (5 achats).`,
+    monthly: `Quota mensuel atteint : ${LUCK_POTIONS.monthly.name} (3 achats).`
 };
 
 async function openShop(guild: Guild, userId: string, reply: (data: { components: ReturnType<typeof ContainerUI.create>[]; flags: MessageFlags.IsComponentsV2; allowedMentions: { parse: [] } }) => Promise<Message>) {
@@ -59,9 +59,9 @@ async function openShop(guild: Guild, userId: string, reply: (data: { components
             createSeparator(),
             createTextDisplay([
                 `🪙 Pièces de serveur **${coins.toLocaleString('fr-FR')}**`,
-                `🍀 Chance actuelle **x${status.luck.toLocaleString('fr-FR')}**`,
-                `✨ Godly **\`${status.godlyRemaining}\`** / **\`5\`** achats restants`,
-                `🌙 Monthly **\`${status.monthlyRemaining}\`** / **\`3\`** achats restants`
+                `🍀 Chance actuelle **${status.luckPercent.toLocaleString('fr-FR')} %**`,
+                `✨ ${LUCK_POTIONS.godly.name} **\`${status.godlyRemaining}\`** / **\`5\`** achats restants`,
+                `🌙 ${LUCK_POTIONS.monthly.name} **\`${status.monthlyRemaining}\`** / **\`3\`** achats restants`
             ].join('\n')),
             createSeparator()
         );
@@ -70,7 +70,7 @@ async function openShop(guild: Guild, userId: string, reply: (data: { components
 
         components.push(createTextDisplay(items.map(([key, potion]) => [
             `### 🧪 ${potion.name}`,
-            `**↳** 🍀 Chance **x${potion.luck.toLocaleString('fr-FR')}**`,
+            `**↳** 🍀 Chance **+${potion.bonusPercent.toLocaleString('fr-FR')} %**`,
             `**↳** ⏳ Durée **x${potion.rolls.toLocaleString('fr-FR')}** tirage${potion.rolls > 1 ? 's' : ''}`,
             `**↳** 🏷️ Prix **${potion.price.toLocaleString('fr-FR')} pièces**`,
             key === 'godly'
@@ -137,7 +137,7 @@ async function openShop(guild: Guild, userId: string, reply: (data: { components
                             title: 'Boutique - Achat',
                             message: [
                                 `Souhaitez-vous acheter **${potion.name}** pour **${potion.price.toLocaleString('fr-FR')} pièces de serveur** ?`,
-                                `🍀 **x${potion.luck.toLocaleString('en')}** pour **${potion.rolls} prochain roll**`
+                                `🍀 **+${potion.bonusPercent.toLocaleString('fr-FR')} %** pendant **${potion.rolls} tirage${potion.rolls > 1 ? 's' : ''}**`
                             ].join('\n'),
                             components: [createActionRow([
                                 createButton('Confirmer', { color: 'green', customId: confirmId }),
@@ -171,7 +171,7 @@ async function openShop(guild: Guild, userId: string, reply: (data: { components
                                 title: 'Boutique - Achat réussi',
                                 message: [
                                     `La potion **${potion.name}** a été achetée et bue pour **${potion.price.toLocaleString('fr-FR')} pièces** !`,
-                                    `Chance **x${result.luck.toLocaleString('fr-FR')}** supplémentaire pour vos **\`${result.rollsRemaining}\`** prochains rolls !`
+                                    `Bonus de chance **+${result.bonusPercent.toLocaleString('fr-FR')} %** pour vos **\`${result.rollsRemaining}\`** prochains rolls !`
                                 ].join('\n')
                             })]
                         });

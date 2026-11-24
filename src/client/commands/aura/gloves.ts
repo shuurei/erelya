@@ -1,7 +1,7 @@
 import { APIComponentInContainer, ComponentType, Message, MessageFlags } from 'discord.js'
 import { Command } from '@/structures/Command'
 import { AuraService } from '@/database/services/aura.service'
-import { AURA_GLOVES, gloveLuck } from '@/utils/aura-gloves'
+import { AURA_GLOVES } from '@/utils/aura-gloves'
 import { ContainerUI } from '@/ui'
 import { auraError } from '@/ui/aura-error'
 import { createActionRow, createButton, createSection, createSeparator, createTextDisplay } from '@/ui/components/common'
@@ -35,7 +35,7 @@ const gloves = async (guildId: string, userId: string, reply: (data: GlovePayloa
             const canCraft = isNext && ingredients.every(([name, amount]) => (status.counts.get(name) ?? 0) >= amount);
 
             const details = [
-                createTextDisplay(`### ${obtained ? '✅' : isNext ? '🔨' : '🔒'} ${glove.name} • x${glove.luck.toLocaleString('en')}`),
+                createTextDisplay(`### ${obtained ? '✅' : isNext ? '🔨' : '🔒'} ${glove.name} • +${glove.luckBonusPercent.toLocaleString('fr-FR')} % de chance`),
                 createTextDisplay(isNext
                     ? ingredients.map(([name, amount]) => `${(status.counts.get(name) ?? 0) >= amount ? '✅' : '❌'} \`${name}\` **${status.counts.get(name) ?? 0}/${amount}**`).join('\n')
                     : obtained ? '*Gant déjà fabriqué*' : '*Fabriquez le palier précédent pour débloquer ce gant*')

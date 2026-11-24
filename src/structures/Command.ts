@@ -7,7 +7,7 @@ import {
     PermissionFlagsBits,
     PermissionResolvable,
     PermissionsBitField,
-    RESTPostAPIApplicationCommandsJSONBody
+    RESTPostAPIChatInputApplicationCommandsJSONBody
 } from 'discord.js'
 
 import client from '@/client/instance'
@@ -140,8 +140,8 @@ export class Command {
         return interaction?.subcommandName ?? interaction?.commandName ?? this.messageCommand?.name ?? message?.commandName ?? 'unknown';
     }
     
-    toAPI() {
-        const data: RESTPostAPIApplicationCommandsJSONBody = {
+    toAPI(): RESTPostAPIChatInputApplicationCommandsJSONBody {
+        const data: RESTPostAPIChatInputApplicationCommandsJSONBody = {
             name: this.name,
             description: this.description ?? this.name,
             name_localizations: this.nameLocalizations,

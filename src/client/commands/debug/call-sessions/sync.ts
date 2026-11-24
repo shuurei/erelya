@@ -1,5 +1,6 @@
 import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
+import { notificationError } from '@/ui/notification-error'
 
 export default new Command({
     access: {
@@ -14,29 +15,14 @@ export default new Command({
             : message.channel;
 
         if (!channel?.isVoiceBased()) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage({
-                        title: '🔍 Debug - Sessions Vocales',
-                        description: `Oups.. Cette commande s'utilise sur des salons vocaux`
-                    })
-                ]
-            });
+            return message.reply(await notificationError('Cette commande s’utilise dans un salon vocal.'));
         }
 
         const sessions = this.client.callSessions.cache;
         const membersToAdd = channel.members.filter(({ id }) => !sessions.get(id));
 
         if (membersToAdd.size <= 0) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.create({
-                        color: 'red',
-                        title: '🔍 Debug - Sessions Vocales',
-                        description: `Les **${membersToAdd.size}** membres sont déjà synchro en cache :)`
-                    })
-                ]
-            });
+            return message.reply(await notificationError('Aucun membre à synchroniser dans ce salon.'));
         }
 
         for (const [memberId, { voice }] of membersToAdd) {

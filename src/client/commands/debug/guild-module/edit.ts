@@ -1,6 +1,7 @@
 import { GuildModuleService, GuildModuleName } from '@/database/services/guild-module.service'
 import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
+import { notificationError } from '@/ui/notification-error'
 
 import * as GuildModules from '@/database/entities/guild-module'
 import { GuildService } from '@/database/services/guild.service';
@@ -18,45 +19,25 @@ export default new Command({
         }
 
         if (!moduleName) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Euh.. Je crois que tu as oublié de mettre le **nom du module** que tu veux modifier hehe..`)
-                ]
-            });
+            return message.reply(await notificationError('Indique le nom du module à modifier.'));
         }
 
         if (!(moduleName in GuildModuleService.repos)) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Mhh.. Je ne trouves pas de **module** avec ce nom, êtes t'es certain d'avoir utilisé le bon nom ? 🤔`)
-                ]
-            });
+            return message.reply(await notificationError('Module introuvable.'));
         }
 
         if (!fieldName) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Euh.. Je crois que tu as oublié de mettre le **nom du champ** que tu veux modifier hehe..`)
-                ]
-            });
+            return message.reply(await notificationError('Indique le nom du champ à modifier.'));
         }
 
         const defaultModule = (GuildModules as any)[`default${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}Module`];
 
         if (!(fieldName in defaultModule)) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Mhh.. Je ne trouves pas de **champ** avec ce nom, t'es certain d'avoir utilisé le bon nom ? 🤔`)
-                ]
-            });
+            return message.reply(await notificationError('Champ introuvable dans ce module.'));
         }
 
         if (!value) {
-            return await message.reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Je veux bien modifier le champ.. mais si j'ai pas de valeur ça va être complicado 😂`)
-                ]
-            });
+            return message.reply(await notificationError('Indique la nouvelle valeur du champ.'));
         }
 
         const fieldType = typeof defaultModule[fieldName];

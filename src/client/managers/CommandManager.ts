@@ -1,21 +1,7 @@
 import fg from 'fast-glob'
 import { pathToFileURL } from 'url'
-import {
-    Collection,
-    SlashCommandBuilder,
-    SlashCommandSubcommandGroupBuilder,
-    RESTPostAPIApplicationCommandsJSONBody,
-    APIApplicationCommandSubcommandGroupOption,
-    APIApplicationCommandSubcommandOption,
-    ApplicationCommandOptionType,
-} from 'discord.js'
-
-import {
-    ErelyaClient,
-    Command,
-    CommandStructure,
-    MessageCommandStyle
-} from '@/structures'
+import { Collection, SlashCommandBuilder, SlashCommandSubcommandGroupBuilder, RESTPostAPIChatInputApplicationCommandsJSONBody, APIApplicationCommandSubcommandGroupOption, APIApplicationCommandSubcommandOption, ApplicationCommandOptionType } from 'discord.js'
+import { ErelyaClient, Command, CommandStructure, MessageCommandStyle } from '@/structures'
 import { logger, cache } from '@/utils'
 
 export interface LoadCommandManagerOptions {
@@ -128,6 +114,12 @@ export class CommandManager {
                     continue;
                 }
     
+                if (parts[0] === 'debug' && mod.onInteraction) {
+                    stats.invalid++;
+                    logger.info(({ redBright }) => redBright(`Debug command "${filePath}" must use onMessage only`));
+                    continue;
+                }
+
                 let interactionStructure: Partial<CommandStructure['interaction']> = {};
                 let messageStructure: Partial<CommandStructure['message']> = {};
     
@@ -292,11 +284,11 @@ export class CommandManager {
                 })
         };
 
-        let unrestrictedSlashCommandsData: RESTPostAPIApplicationCommandsJSONBody[] = [];
-        let restrictedSlashCommandsData = new Collection<string, RESTPostAPIApplicationCommandsJSONBody[]>();
+        const unrestrictedSlashCommandsData: RESTPostAPIChatInputApplicationCommandsJSONBody[] = [];
+        const restrictedSlashCommandsData = new Collection<string, RESTPostAPIChatInputApplicationCommandsJSONBody[]>();
 
         const addOrUpdateCommand = (
-            commandsData: RESTPostAPIApplicationCommandsJSONBody[],
+            commandsData: RESTPostAPIChatInputApplicationCommandsJSONBody[],
             command: Command,
             commandName: string,
             subcommandGroupName?: string | null,
@@ -312,13 +304,20 @@ export class CommandManager {
                     commandsData.push(cmd);
                 }
 
-                const sub = {
+                const { name, description, name_localizations, description_localizations } = command.toAPI();
+                const sub: APIApplicationCommandSubcommandOption = {
                     type: ApplicationCommandOptionType.Subcommand,
-                    ...command.toAPI(),
-                } as APIApplicationCommandSubcommandOption;
+                    name,
+                    description,
+                    name_localizations,
+                    description_localizations,
+                    options: command.slashCommand?.arguments,
+                };
+                const options = (cmd.options ??= []);
 
                 if (subcommandGroupName) {
-                    let group = cmd.options?.find((opt) => opt.name === subcommandGroupName) as APIApplicationCommandSubcommandGroupOption;
+                    let group = options.find((opt): opt is APIApplicationCommandSubcommandGroupOption => opt.type === ApplicationCommandOptionType.SubcommandGroup && opt.name === subcommandGroupName);
+
                     if (!group) {
                         group = {
                             ...new SlashCommandSubcommandGroupBuilder()
@@ -326,12 +325,12 @@ export class CommandManager {
                                 .setDescription(subcommandGroupName)
                                 .toJSON(),
                         };
-                        cmd.options?.push(group);
+                        options.push(group);
                     }
 
-                    group.options!.push(sub);
+                    (group.options ??= []).push(sub);
                 } else {
-                    cmd.options?.push(sub);
+                    options.push(sub);
                 }
             } else {
                 commandsData.push(command.toAPI());
